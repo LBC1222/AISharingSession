@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>等比数列求和公式 - 高中数学公式可视化</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: "PingFang SC", "Microsoft YaHei", "SimHei", sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh; color: #fff; transition: all 0.3s ease;
+        }
+        body.light-theme { background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); color: #333; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        header { text-align: center; padding: 20px 0; }
+        h1 { font-size: 2.2em; margin-bottom: 10px; background: linear-gradient(90deg, #fd79a8, #e17055); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .formula-box {
+            background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
+            border-radius: 15px; padding: 20px 30px; margin: 20px auto;
+            display: inline-block; border: 1px solid rgba(255,255,255,0.2);
+        }
+        body.light-theme .formula-box { background: rgba(255,255,255,0.8); border: 1px solid rgba(0,0,0,0.1); }
+        .formula { font-size: 1.8em; color: #fd79a8; font-family: "Times New Roman", serif; }
+        .theme-toggle {
+            position: fixed; top: 20px; right: 20px; padding: 10px 20px;
+            border: none; border-radius: 25px; background: rgba(255,255,255,0.2);
+            color: #fff; cursor: pointer; transition: all 0.3s;
+        }
+        body.light-theme .theme-toggle { background: rgba(0,0,0,0.1); color: #333; }
+        .main-content { display: grid; grid-template-columns: 1fr 400px; gap: 30px; margin-top: 20px; }
+        #plot { background: rgba(255,255,255,0.05); border-radius: 15px; min-height: 600px; }
+        body.light-theme #plot { background: rgba(255,255,255,0.9); }
+        .control-panel {
+            background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
+            border-radius: 15px; padding: 25px; border: 1px solid rgba(255,255,255,0.2);
+        }
+        body.light-theme .control-panel { background: rgba(255,255,255,0.8); border: 1px solid rgba(0,0,0,0.1); }
+        .control-group { margin-bottom: 20px; }
+        .control-group label { display: block; margin-bottom: 8px; font-size: 1.1em; color: #fd79a8; }
+        input[type="range"] {
+            width: 100%; height: 8px; border-radius: 4px;
+            background: rgba(255,255,255,0.2); outline: none; -webkit-appearance: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 20px; height: 20px;
+            border-radius: 50%; background: #fd79a8; cursor: pointer;
+        }
+        .value-display { text-align: right; font-size: 1.2em; margin-top: 5px; color: #fff; }
+        body.light-theme .value-display { color: #333; }
+        .result-panel {
+            background: rgba(253,121,168,0.1); border-radius: 10px; padding: 20px; margin-top: 20px;
+        }
+        body.light-theme .result-panel { background: rgba(253,121,168,0.2); }
+        .result-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .result-value { color: #fd79a8; font-weight: bold; font-size: 1.1em; }
+        .hint { background: rgba(255,193,7,0.2); border-radius: 10px; padding: 15px; margin-top: 20px; font-size: 0.95em; line-height: 1.6; }
+        .series-display { background: rgba(255,255,255,0.05); border-radius: 10px; padding: 15px; margin-top: 15px; font-family: monospace; font-size: 1em; }
+        body.light-theme .series-display { background: rgba(255,255,255,0.8); color: #333; }
+        .convergence { background: linear-gradient(90deg, rgba(253,121,168,0.2), rgba(225,112,85,0.2)); border-radius: 10px; padding: 15px; margin-top: 15px; text-align: center; font-size: 1.1em; }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" onclick="toggleTheme()">🌙 深色/浅色</button>
+    <div class="container">
+        <header>
+            <h1>📈 等比数列求和公式</h1>
+            <div class="formula-box">
+                <div class="formula">Sn = a₁(1-qⁿ)/(1-q) (q≠1)</div>
+            </div>
+        </header>
+        
+        <div class="main-content">
+            <div id="plot"></div>
+            <div class="control-panel">
+                <h2 style="margin-bottom: 20px; color: #fd79a8;">🎛️ 参数控制</h2>
+                <div class="control-group">
+                    <label>首项 a₁</label>
+                    <input type="range" id="a1" min="0.5" max="5" step="0.5" value="2">
+                    <div class="value-display" id="a1-value">2</div>
+                </div>
+                <div class="control-group">
+                    <label>公比 q</label>
+                    <input type="range" id="q" min="0.1" max="2" step="0.1" value="0.8">
+                    <div class="value-display" id="q-value">0.8</div>
+                </div>
+                <div class="control-group">
+                    <label>项数 n</label>
+                    <input type="range" id="n" min="2" max="20" value="8">
+                    <div class="value-display" id="n-value">8</div>
+                </div>
+                
+                <div class="result-panel">
+                    <h3 style="margin-bottom: 15px; color: #fd79a8;">📊 计算结果</h3>
+                    <div class="result-item"><span>1 - qⁿ =</span><span class="result-value" id="qPower">--</span></div>
+                    <div class="result-item"><span>1 - q =</span><span class="result-value" id="oneMinusQ">--</span></div>
+                    <div class="result-item"><span>Sn = a₁(1-qⁿ)/(1-q) =</span><span class="result-value" id="sn">--</span></div>
+                </div>
+                
+                <div class="series-display">
+                    <div style="margin-bottom: 10px; color: #fd79a8;">📝 等比数列：</div>
+                    <div id="seriesOutput" style="font-size: 0.9em;">--</div>
+                </div>
+                
+                <div class="convergence" id="convergenceInfo">
+                    -- 收敛信息 --
+                </div>
+                
+                <div class="hint">
+                    💡 提示：等比数列的求和公式是通过乘以公比后相减得到的"错位相减法"。观察当 |q| < 1 时，数列逐渐收敛到0。
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let isDarkTheme = true;
+        function toggleTheme() {
+            isDarkTheme = !isDarkTheme;
+            document.body.classList.toggle('light-theme');
+            updatePlot();
+        }
+        
+        function generateGeometricSeries(a1, q, n) {
+            const series = [];
+            for (let i = 0; i < n; i++) {
+                series.push(a1 * Math.pow(q, i));
+            }
+            return series;
+        }
+        
+        function updatePlot() {
+            const a1 = parseFloat(document.getElementById('a1').value);
+            const q = parseFloat(document.getElementById('q').value);
+            const n = parseInt(document.getElementById('n').value);
+            
+            document.getElementById('a1-value').textContent = a1;
+            document.getElementById('q-value').textContent = q;
+            document.getElementById('n-value').textContent = n;
+            
+            // 生成等比数列
+            const series = generateGeometricSeries(a1, q, n);
+            
+            // 计算和
+            const qPower = 1 - Math.pow(q, n);
+            const oneMinusQ = 1 - q;
+            const sn = a1 * qPower / oneMinusQ;
+            
+            // 更新显示
+            document.getElementById('qPower').textContent = qPower.toFixed(6);
+            document.getElementById('oneMinusQ').textContent = oneMinusQ.toFixed(3);
+            document.getElementById('sn').textContent = sn.toFixed(6);
+            document.getElementById('seriesOutput').innerHTML = series.map((v, i) => 
+                `<span style="color: ${i === 0 ? '#fd79a8' : (i < 3 ? '#e17055' : '#636e72')}">${v.toFixed(4)}</span>`
+            ).join(' + ');
+            
+            // 收敛信息
+            const convergenceInfo = document.getElementById('convergenceInfo');
+            if (Math.abs(q) < 1) {
+                const limit = a1 / (1 - q);
+                convergenceInfo.innerHTML = `✓ |q| < 1，当 n → ∞ 时<br>收敛到 S∞ = a₁/(1-q) = <b>${limit.toFixed(4)}</b>`;
+                convergenceInfo.style.color = '#1dd1a1';
+            } else if (Math.abs(q) === 1) {
+                convergenceInfo.innerHTML = `⚠️ q = ±1，公式不适用`;
+                convergenceInfo.style.color = '#ff6b6b';
+            } else {
+                convergenceInfo.innerHTML = `⚠️ |q| > 1，数列发散`;
+                convergenceInfo.style.color = '#ff6b6b';
+            }
+            
+            // 构建图表数据
+            const x = series.map((_, i) => `n=${i+1}`);
+            const y = series;
+            const cumSum = [];
+            let sum = 0;
+            series.forEach(v => {
+                sum += v;
+                cumSum.push(sum);
+            });
+            
+            const traces = [
+                // 柱状图 - 各项值
+                {
+                    x: x,
+                    y: y,
+                    type: 'bar',
+                    name: '各项值',
+                    marker: {
+                        color: series.map((v, i) => i < 3 ? '#fd79a8' : '#e17055'),
+                        line: { color: '#fff', width: 1 }
+                    },
+                    text: series.map(v => v.toFixed(3)),
+                    textposition: 'inside',
+                    textfont: { size: 11, color: '#fff' }
+                },
+                // 折线图 - 累计和
+                {
+                    x: x,
+                    y: cumSum,
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    name: '累计和 Sn',
+                    line: { color: '#00cec9', width: 3 },
+                    marker: { size: 8, color: '#00cec9' },
+                    yaxis: 'y2'
+                }
+            ];
+            
+            const layout = {
+                title: {
+                    text: `<b>等比数列增长与累计和 Sn = ${sn.toFixed(4)}</b>`,
+                    font: { size: 22, color: '#fd79a8' }
+                },
+                showlegend: true,
+                legend: {
+                    font: { size: 14, color: isDarkTheme ? '#fff' : '#333' },
+                    x: 0.02, y: 0.98
+                },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                xaxis: {
+                    title: '项数 n',
+                    showgrid: false,
+                    tickfont: { size: 14, color: isDarkTheme ? '#fff' : '#333' },
+                    titlefont: { size: 16, color: '#fd79a8' }
+                },
+                yaxis: {
+                    title: '各项值',
+                    showgrid: true,
+                    gridcolor: 'rgba(255,255,255,0.1)',
+                    tickfont: { size: 14, color: isDarkTheme ? '#fff' : '#333' },
+                    titlefont: { size: 16, color: '#fd79a8' }
+                },
+                yaxis2: {
+                    title: '累计和 Sn',
+                    overlaying: 'y',
+                    side: 'right',
+                    showgrid: false,
+                    tickfont: { size: 14, color: '#00cec9' },
+                    titlefont: { size: 16, color: '#00cec9' }
+                },
+                margin: { l: 70, r: 70, t: 80, b: 80 }
+            };
+            
+            if (!isDarkTheme) {
+                layout.yaxis.gridcolor = 'rgba(0,0,0,0.1)';
+            }
+            
+            Plotly.react('plot', traces, layout, {displayModeBar: false});
+        }
+        
+        ['a1', 'q', 'n'].forEach(id => {
+            document.getElementById(id).addEventListener('input', updatePlot);
+        });
+        updatePlot();
+    </script>
+</body>
+</html>

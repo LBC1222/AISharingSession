@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>余弦定理 - 高中数学公式可视化</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: "PingFang SC", "Microsoft YaHei", "SimHei", sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+            transition: all 0.3s ease;
+        }
+        body.light-theme {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: #333;
+        }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        header { text-align: center; padding: 30px 0; }
+        h1 {
+            font-size: 2.5em; margin-bottom: 10px;
+            background: linear-gradient(90deg, #ff6b6b, #feca57);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .formula-box {
+            background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
+            border-radius: 15px; padding: 20px 30px; margin: 20px auto;
+            display: inline-block; border: 1px solid rgba(255,255,255,0.2);
+        }
+        body.light-theme .formula-box { background: rgba(255,255,255,0.8); border: 1px solid rgba(0,0,0,0.1); }
+        .formula { font-size: 1.8em; color: #ff6b6b; font-family: "Times New Roman", serif; }
+        .theme-toggle {
+            position: fixed; top: 20px; right: 20px; padding: 10px 20px;
+            border: none; border-radius: 25px; background: rgba(255,255,255,0.2);
+            color: #fff; cursor: pointer; font-size: 1em; transition: all 0.3s;
+        }
+        body.light-theme .theme-toggle { background: rgba(0,0,0,0.1); color: #333; }
+        .main-content { display: grid; grid-template-columns: 1fr 350px; gap: 30px; margin-top: 20px; }
+        #plot { background: rgba(255,255,255,0.05); border-radius: 15px; min-height: 600px; }
+        body.light-theme #plot { background: rgba(255,255,255,0.9); }
+        .control-panel {
+            background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
+            border-radius: 15px; padding: 25px; border: 1px solid rgba(255,255,255,0.2);
+        }
+        body.light-theme .control-panel { background: rgba(255,255,255,0.8); border: 1px solid rgba(0,0,0,0.1); }
+        .control-group { margin-bottom: 20px; }
+        .control-group label { display: block; margin-bottom: 8px; font-size: 1.1em; color: #ff6b6b; }
+        input[type="range"] {
+            width: 100%; height: 8px; border-radius: 4px;
+            background: rgba(255,255,255,0.2); outline: none; -webkit-appearance: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 20px; height: 20px;
+            border-radius: 50%; background: #ff6b6b; cursor: pointer;
+        }
+        .value-display { text-align: right; font-size: 1.2em; margin-top: 5px; color: #fff; }
+        body.light-theme .value-display { color: #333; }
+        .result-panel {
+            background: rgba(255,107,107,0.1); border-radius: 10px; padding: 20px; margin-top: 20px;
+        }
+        body.light-theme .result-panel { background: rgba(255,107,107,0.2); }
+        .result-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .result-value { color: #ff6b6b; font-weight: bold; font-size: 1.2em; }
+        .conclusion {
+            background: linear-gradient(90deg, rgba(255,107,107,0.2), rgba(254,202,87,0.2));
+            border-radius: 10px; padding: 20px; margin-top: 20px; text-align: center; font-size: 1.1em;
+        }
+        .hint { background: rgba(255,193,7,0.2); border-radius: 10px; padding: 15px; margin-top: 15px; font-size: 0.95em; line-height: 1.6; }
+        .formula-viz { background: rgba(255,255,255,0.05); border-radius: 10px; padding: 15px; margin-top: 15px; font-family: "Times New Roman", serif; font-size: 1.1em; }
+        body.light-theme .formula-viz { background: rgba(255,255,255,0.8); }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" onclick="toggleTheme()">🌙 深色/浅色</button>
+    <div class="container">
+        <header>
+            <h1>📐 余弦定理</h1>
+            <div class="formula-box">
+                <div class="formula">c² = a² + b² - 2ab·cosC</div>
+            </div>
+        </header>
+        <div class="main-content">
+            <div id="plot"></div>
+            <div class="control-panel">
+                <h2 style="margin-bottom: 20px; color: #ff6b6b;">🎛️ 参数控制</h2>
+                <div class="control-group">
+                    <label>边 a 长度</label>
+                    <input type="range" id="sideA" min="50" max="200" value="120">
+                    <div class="value-display" id="sideA-value">120</div>
+                </div>
+                <div class="control-group">
+                    <label>边 b 长度</label>
+                    <input type="range" id="sideB" min="50" max="200" value="100">
+                    <div class="value-display" id="sideB-value">100</div>
+                </div>
+                <div class="control-group">
+                    <label>∠C 角度 (°)</label>
+                    <input type="range" id="angleC" min="10" max="170" value="60">
+                    <div class="value-display" id="angleC-value">60°</div>
+                </div>
+                <div class="result-panel">
+                    <h3 style="margin-bottom: 15px; color: #ff6b6b;">📊 计算结果</h3>
+                    <div class="result-item"><span>边 c =</span><span class="result-value" id="resultC">--</span></div>
+                    <div class="result-item"><span>a² =</span><span class="result-value" id="aSquare">--</span></div>
+                    <div class="result-item"><span>b² =</span><span class="result-value" id="bSquare">--</span></div>
+                    <div class="result-item"><span>2ab·cosC =</span><span class="result-value" id="cosTerm">--</span></div>
+                </div>
+                <div class="formula-viz">
+                    c² = <span id="fv_a">a²</span> + <span id="fv_b">b²</span> - <span id="fv_cos">2ab·cosC</span>
+                </div>
+                <div class="conclusion">
+                    ✓ 余弦定理是勾股定理的推广<br>
+                    当 ∠C = 90° 时，cosC = 0<br>
+                    则 c² = a² + b²（退化为勾股定理）
+                </div>
+                <div class="hint">
+                    💡 提示：调整角度 C，观察第三边 c 的变化。当角度接近 0° 时，c ≈ |a-b|；当角度接近 180° 时，c ≈ a+b。
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        let isDarkTheme = true;
+        function toggleTheme() {
+            isDarkTheme = !isDarkTheme;
+            document.body.classList.toggle('light-theme');
+            updatePlot();
+        }
+        function degToRad(d) { return d * Math.PI / 180; }
+        function updatePlot() {
+            const a = parseFloat(document.getElementById('sideA').value);
+            const b = parseFloat(document.getElementById('sideB').value);
+            const angleC = parseFloat(document.getElementById('angleC').value);
+            
+            document.getElementById('sideA-value').textContent = a;
+            document.getElementById('sideB-value').textContent = b;
+            document.getElementById('angleC-value').textContent = angleC + '°';
+            
+            // 余弦定理计算c
+            const cosC = Math.cos(degToRad(angleC));
+            const c = Math.sqrt(a * a + b * b - 2 * a * b * cosC);
+            
+            // 更新结果显示
+            document.getElementById('resultC').textContent = c.toFixed(2);
+            document.getElementById('aSquare').textContent = (a*a).toFixed(0);
+            document.getElementById('bSquare').textContent = (b*b).toFixed(0);
+            document.getElementById('cosTerm').textContent = (2*a*b*cosC).toFixed(1);
+            
+            // 公式可视化高亮
+            document.getElementById('fv_a').style.color = '#feca57';
+            document.getElementById('fv_b').style.color = '#48dbfb';
+            document.getElementById('fv_cos').style.color = angleC > 90 ? '#ff6b6b' : '#1dd1a1';
+            
+            // 构建三角形顶点
+            // C点在原点, CA沿x轴
+            const cx = 0, cy = 0;
+            const ax = a, ay = 0;
+            // B点用余弦定理确定位置
+            const bx = b * cosC;
+            const by = b * Math.sin(degToRad(180 - angleC));
+            
+            // 计算直角投影点
+            const projX = b * cosC;
+            const projY = 0;
+            
+            // 直角三角形的直角点
+            const rightAngleX = bx;
+            const rightAngleY = 0;
+            
+            // 三角形顶点
+            const triX = [cx, ax, bx, cx];
+            const triY = [cy, ay, by, cy];
+            
+            // 直角投影线
+            const projLineX = [bx, rightAngleX, projX];
+            const projLineY = [0, 0, 0];
+            
+            // 绘制辅助直角标记
+            const rightAngleArc = [];
+            for (let i = 0; i <= 10; i++) {
+                const t = Math.PI/2 * i / 10;
+                rightAngleArc.push({ x: bx + 10*Math.cos(t), y: 10*Math.sin(t) });
+            }
+            
+            // 构建痕迹（显示勾股-余弦修正的关系）
+            const traces = [
+                // 三角形填充
+                {
+                    x: triX, y: triY,
+                    mode: 'lines',
+                    fill: 'toself',
+                    fillcolor: 'rgba(255,107,107,0.15)',
+                    line: { color: '#ff6b6b', width: 3 },
+                    name: '三角形'
+                },
+                // 边a (CA)
+                {
+                    x: [cx - 15, (cx + ax)/2 - 15], y: [cy - 20, (cy + ay)/2 - 20],
+                    mode: 'text', text: ['a'], textfont: { size: 20, color: '#feca57' }
+                },
+                // 边b (CB)
+                {
+                    x: [(cx + bx)/2 + 15, (cx + bx)/2 + 15], y: [(cy + by)/2, (cy + by)/2],
+                    mode: 'text', text: ['b'], textfont: { size: 20, color: '#48dbfb' }
+                },
+                // 边c (AB)
+                {
+                    x: [(ax + bx)/2, (ax + bx)/2], y: [(ay + by)/2 + 15, (ay + by)/2 + 15],
+                    mode: 'text', text: ['c'], textfont: { size: 20, color: '#ff6b6b' }
+                },
+                // 顶点标注
+                {
+                    x: [cx, ax, bx], y: [cy - 25, ay - 25, by + 15],
+                    mode: 'text', text: ['C', 'A', 'B'],
+                    textfont: { size: 18, color: '#fff', bold: true }
+                },
+                // 投影线（虚线显示余弦修正）
+                {
+                    x: [cx, projX], y: [cy, projY],
+                    mode: 'lines', line: { color: '#feca57', width: 2, dash: 'dot' },
+                    name: 'a的投影'
+                },
+                {
+                    x: [bx, projX], y: [by, projY],
+                    mode: 'lines', line: { color: '#48dbfb', width: 2, dash: 'dot' },
+                    name: 'b的投影'
+                },
+                // 直角标记弧
+                {
+                    x: rightAngleArc.map(p => p.x),
+                    y: rightAngleArc.map(p => p.y),
+                    mode: 'lines', line: { color: '#fff', width: 2 },
+                    name: '直角标记'
+                },
+                // 角度C标注
+                {
+                    x: [35], y: [25],
+                    mode: 'text', text: [`∠C = ${angleC}°`],
+                    textfont: { size: 16, color: '#ffd93d' }
+                }
+            ];
+            
+            const maxDim = Math.max(a, b) + 50;
+            const layout = {
+                showlegend: false,
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                xaxis: { showgrid: true, gridcolor: 'rgba(255,255,255,0.1)', zeroline: false, range: [-50, maxDim], title: 'x' },
+                yaxis: { showgrid: true, gridcolor: 'rgba(255,255,255,0.1)', zeroline: false, range: [-50, maxDim], scaleanchor: 'x', scaleratio: 1 },
+                margin: { l: 50, r: 50, t: 50, b: 50 }
+            };
+            
+            if (!isDarkTheme) {
+                layout.xaxis.gridcolor = 'rgba(0,0,0,0.1)';
+                layout.yaxis.gridcolor = 'rgba(0,0,0,0.1)';
+            }
+            
+            Plotly.react('plot', traces, layout, {displayModeBar: false});
+        }
+        
+        ['sideA', 'sideB', 'angleC'].forEach(id => {
+            document.getElementById(id).addEventListener('input', updatePlot);
+        });
+        updatePlot();
+    </script>
+</body>
+</html>

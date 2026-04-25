@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>双曲线标准方程 - 高中数学公式可视化</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: "PingFang SC", "Microsoft YaHei", "SimHei", sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh; color: #fff; transition: all 0.3s ease;
+        }
+        body.light-theme { background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); color: #333; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        header { text-align: center; padding: 20px 0; }
+        h1 { font-size: 2.2em; margin-bottom: 10px; background: linear-gradient(90deg, #ff7675, #fdcb6e); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .formula-box {
+            background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
+            border-radius: 15px; padding: 20px 30px; margin: 20px auto;
+            display: inline-block; border: 1px solid rgba(255,255,255,0.2);
+        }
+        body.light-theme .formula-box { background: rgba(255,255,255,0.8); border: 1px solid rgba(0,0,0,0.1); }
+        .formula { font-size: 1.8em; color: #ff7675; font-family: "Times New Roman", serif; }
+        .theme-toggle {
+            position: fixed; top: 20px; right: 20px; padding: 10px 20px;
+            border: none; border-radius: 25px; background: rgba(255,255,255,0.2);
+            color: #fff; cursor: pointer; transition: all 0.3s;
+        }
+        body.light-theme .theme-toggle { background: rgba(0,0,0,0.1); color: #333; }
+        .main-content { display: grid; grid-template-columns: 1fr 350px; gap: 30px; margin-top: 20px; }
+        #plot { background: rgba(255,255,255,0.05); border-radius: 15px; min-height: 600px; }
+        body.light-theme #plot { background: rgba(255,255,255,0.9); }
+        .control-panel {
+            background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
+            border-radius: 15px; padding: 25px; border: 1px solid rgba(255,255,255,0.2);
+        }
+        body.light-theme .control-panel { background: rgba(255,255,255,0.8); border: 1px solid rgba(0,0,0,0.1); }
+        .control-group { margin-bottom: 20px; }
+        .control-group label { display: block; margin-bottom: 8px; font-size: 1.1em; color: #ff7675; }
+        input[type="range"] {
+            width: 100%; height: 8px; border-radius: 4px;
+            background: rgba(255,255,255,0.2); outline: none; -webkit-appearance: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 20px; height: 20px;
+            border-radius: 50%; background: #ff7675; cursor: pointer;
+        }
+        .value-display { text-align: right; font-size: 1.2em; margin-top: 5px; color: #fff; }
+        body.light-theme .value-display { color: #333; }
+        .result-panel {
+            background: rgba(255,118,117,0.1); border-radius: 10px; padding: 20px; margin-top: 20px;
+        }
+        body.light-theme .result-panel { background: rgba(255,118,117,0.2); }
+        .result-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .result-value { color: #ff7675; font-weight: bold; font-size: 1.1em; }
+        .hint { background: rgba(255,193,7,0.2); border-radius: 10px; padding: 15px; margin-top: 15px; font-size: 0.95em; line-height: 1.6; }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" onclick="toggleTheme()">🌙 深色/浅色</button>
+    <div class="container">
+        <header>
+            <h1>🔥 双曲线标准方程</h1>
+            <div class="formula-box">
+                <div class="formula">x²/a² - y²/b² = 1</div>
+            </div>
+        </header>
+        
+        <div class="main-content">
+            <div id="plot"></div>
+            <div class="control-panel">
+                <h2 style="margin-bottom: 20px; color: #ff7675;">🎛️ 参数控制</h2>
+                <div class="control-group">
+                    <label>实半轴 a</label>
+                    <input type="range" id="a" min="1" max="4" step="0.5" value="2">
+                    <div class="value-display" id="a-value">2</div>
+                </div>
+                <div class="control-group">
+                    <label>虚半轴 b</label>
+                    <input type="range" id="b" min="1" max="5" step="0.5" value="3">
+                    <div class="value-display" id="b-value">3</div>
+                </div>
+                
+                <div class="result-panel">
+                    <h3 style="margin-bottom: 15px; color: #ff7675;">📊 双曲线参数</h3>
+                    <div class="result-item"><span>实轴 2a =</span><span class="result-value" id="realAxis">4</span></div>
+                    <div class="result-item"><span>虚轴 2b =</span><span class="result-value" id="imagAxis">6</span></div>
+                    <div class="result-item"><span>焦距 2c =</span><span class="result-value" id="focalLength">--</span></div>
+                    <div class="result-item"><span>焦点 c =</span><span class="result-value" id="focal">--</span></div>
+                    <div class="result-item"><span>离心率 e =</span><span class="result-value" id="eccentricity">--</span></div>
+                    <div class="result-item"><span>渐近线斜率 =</span><span class="result-value" id="asymptote">--</span></div>
+                </div>
+                
+                <div class="hint">
+                    💡 提示：双曲线是到两焦点距离之差的绝对值为常数2a的点的轨迹。离心率 e = c/a > 1，描述双曲线的"开口程度"。渐近线方程为 y = ±(b/a)x。
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let isDarkTheme = true;
+        function toggleTheme() {
+            isDarkTheme = !isDarkTheme;
+            document.body.classList.toggle('light-theme');
+            updatePlot();
+        }
+        
+        function updatePlot() {
+            const a = parseFloat(document.getElementById('a').value);
+            const b = parseFloat(document.getElementById('b').value);
+            
+            document.getElementById('a-value').textContent = a;
+            document.getElementById('b-value').textContent = b;
+            
+            // 计算参数
+            const c = Math.sqrt(a * a + b * b);
+            const eccentricity = c / a;
+            
+            // 更新显示
+            document.getElementById('realAxis').textContent = (2 * a).toFixed(1);
+            document.getElementById('imagAxis').textContent = (2 * b).toFixed(1);
+            document.getElementById('focalLength').textContent = (2 * c).toFixed(2);
+            document.getElementById('focal').textContent = c.toFixed(2);
+            document.getElementById('eccentricity').textContent = eccentricity.toFixed(3);
+            document.getElementById('asymptote').textContent = `±${(b/a).toFixed(2)}`;
+            
+            // 生成右支双曲线
+            const rightBranch = [];
+            for (let x = a; x <= 10; x += 0.1) {
+                const y = b * Math.sqrt((x * x) / (a * a) - 1);
+                rightBranch.push({ x, y });
+            }
+            for (let x = 10; x >= a; x -= 0.1) {
+                const y = -b * Math.sqrt((x * x) / (a * a) - 1);
+                rightBranch.push({ x, y });
+            }
+            
+            // 生成左支双曲线
+            const leftBranch = [];
+            for (let x = -a; x >= -10; x -= 0.1) {
+                const y = b * Math.sqrt((x * x) / (a * a) - 1);
+                leftBranch.push({ x, y });
+            }
+            for (let x = -10; x <= -a; x += 0.1) {
+                const y = -b * Math.sqrt((x * x) / (a * a) - 1);
+                leftBranch.push({ x, y });
+            }
+            
+            // 渐近线
+            const asymptoteRange = 12;
+            const asymptote1X = [-asymptoteRange, asymptoteRange];
+            const asymptote1Y = asymptote1X.map(x => (b / a) * x);
+            const asymptote2X = [-asymptoteRange, asymptoteRange];
+            const asymptote2Y = asymptote2X.map(x => -(b / a) * x);
+            
+            // 焦点位置
+            const f1x = -c, f1y = 0;
+            const f2x = c, f2y = 0;
+            
+            // 顶点位置
+            const v1x = -a, v1y = 0;
+            const v2x = a, v2y = 0;
+            
+            const traces = [
+                // 渐近线1
+                {
+                    x: asymptote1X, y: asymptote1Y,
+                    mode: 'lines',
+                    name: '渐近线1',
+                    line: { color: 'rgba(253,203,110,0.5)', width: 2, dash: 'dash' }
+                },
+                // 渐近线2
+                {
+                    x: asymptote2X, y: asymptote2Y,
+                    mode: 'lines',
+                    name: '渐近线2',
+                    line: { color: 'rgba(253,203,110,0.5)', width: 2, dash: 'dash' }
+                },
+                // 右支
+                {
+                    x: rightBranch.map(p => p.x),
+                    y: rightBranch.map(p => p.y),
+                    mode: 'lines',
+                    name: '右支',
+                    line: { color: '#ff7675', width: 4 }
+                },
+                // 左支
+                {
+                    x: leftBranch.map(p => p.x),
+                    y: leftBranch.map(p => p.y),
+                    mode: 'lines',
+                    name: '左支',
+                    line: { color: '#ff7675', width: 4 }
+                },
+                // 实轴
+                {
+                    x: [-a - 1, a + 1], y: [0, 0],
+                    mode: 'lines',
+                    name: '实轴',
+                    line: { color: '#fd79a8', width: 2 }
+                },
+                // 虚轴（延长）
+                {
+                    x: [0, 0], y: [-8, 8],
+                    mode: 'lines',
+                    name: '虚轴',
+                    line: { color: '#74b9ff', width: 2 }
+                },
+                // 焦点
+                {
+                    x: [f1x, f2x], y: [f1y, f2y],
+                    mode: 'markers',
+                    marker: { size: 15, color: '#fdcb6e', symbol: 'diamond' },
+                    name: '焦点'
+                },
+                // 顶点
+                {
+                    x: [v1x, v2x], y: [v1y, v2y],
+                    mode: 'markers',
+                    marker: { size: 12, color: '#ff7675' },
+                    name: '顶点'
+                },
+                // 顶点标注
+                {
+                    x: [v1x, v2x],
+                    y: [v1y - 0.4, v2y - 0.4],
+                    mode: 'text',
+                    text: ['V₁', 'V₂'],
+                    textfont: { size: 14, color: '#ff7675' }
+                },
+                // 焦点标注
+                {
+                    x: [f1x, f2x],
+                    y: [f1y - 0.4, f2y - 0.4],
+                    mode: 'text',
+                    text: ['F₁', 'F₂'],
+                    textfont: { size: 14, color: '#fdcb6e' }
+                },
+                // a标注
+                {
+                    x: [-a/2], y: [0.3],
+                    mode: 'text',
+                    text: [`a=${a}`],
+                    textfont: { size: 14, color: '#fd79a8' }
+                },
+                // b标注
+                {
+                    x: [0.3], y: [b/2],
+                    mode: 'text',
+                    text: [`b=${b}`],
+                    textfont: { size: 14, color: '#74b9ff' }
+                },
+                // c标注
+                {
+                    x: [c/2], y: [0.3],
+                    mode: 'text',
+                    text: [`c=${c.toFixed(2)}`],
+                    textfont: { size: 12, color: '#fdcb6e' }
+                },
+                // 离心率标注
+                {
+                    x: [0], y: [b + 2],
+                    mode: 'text',
+                    text: [`e = ${eccentricity.toFixed(3)}`],
+                    textfont: { size: 16, color: '#ff7675', bold: true }
+                },
+                // 渐近线方程标注
+                {
+                    x: [-8], y: [-7],
+                    mode: 'text',
+                    text: [`y = ±${(b/a).toFixed(2)}x`],
+                    textfont: { size: 12, color: '#fdcb6e' }
+                }
+            ];
+            
+            const maxRange = Math.max(a, b, c) + 2;
+            const layout = {
+                title: {
+                    text: `<b>x²/${a}² - y²/${b}² = 1</b>`,
+                    font: { size: 24, color: '#ff7675' }
+                },
+                showlegend: false,
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                xaxis: {
+                    showgrid: true,
+                    gridcolor: 'rgba(255,255,255,0.1)',
+                    zeroline: true,
+                    zerolinecolor: 'rgba(255,255,255,0.3)',
+                    range: [-maxRange, maxRange],
+                    scaleanchor: 'y',
+                    scaleratio: 1
+                },
+                yaxis: {
+                    showgrid: true,
+                    gridcolor: 'rgba(255,255,255,0.1)',
+                    zeroline: true,
+                    zerolinecolor: 'rgba(255,255,255,0.3)',
+                    range: [-maxRange, maxRange]
+                },
+                margin: { l: 50, r: 50, t: 80, b: 50 }
+            };
+            
+            if (!isDarkTheme) {
+                layout.xaxis.gridcolor = 'rgba(0,0,0,0.1)';
+                layout.yaxis.gridcolor = 'rgba(0,0,0,0.1)';
+            }
+            
+            Plotly.react('plot', traces, layout, {displayModeBar: false});
+        }
+        
+        ['a', 'b'].forEach(id => {
+            document.getElementById(id).addEventListener('input', updatePlot);
+        });
+        updatePlot();
+    </script>
+</body>
+</html>

@@ -1,0 +1,1373 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>钓鱼静音神器 - Silent Fishing</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Nunito', 'Noto Sans SC', sans-serif; overflow: hidden; user-select: none; }
+
+    #canvas { display: block; width: 100vw; height: 100vh; }
+
+    /* ── Start Panel ── */
+    #start-panel {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      z-index: 100; pointer-events: all;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-radius: 32px; padding: 44px 52px; text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.15), 0 0 0 1px rgba(255,255,255,0.9), 0 0 0 4px rgba(33,150,243,0.2);
+      animation: panelBounce 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+      min-width: 360px;
+    }
+
+    @keyframes panelBounce {
+      from { opacity: 0; transform: translate(-50%, -50%) scale(0.75) rotate(-2deg); }
+      to   { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+    }
+
+    .panel-title-text {
+      font-size: 2.4rem; font-weight: 900; letter-spacing: -1px; line-height: 1.1;
+      background: linear-gradient(135deg, #1976D2 0%, #42A5F5 45%, #26A69A 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+
+    .panel-subtitle {
+      font-size: 0.95rem; color: #999; font-weight: 600; margin-top: 6px; margin-bottom: 28px;
+    }
+
+    /* ── Buttons ── */
+    .btn-start {
+      position: relative; overflow: hidden; cursor: pointer;
+      background: linear-gradient(135deg, #42A5F5, #1E88E5, #1565C0);
+      color: white; border: none; padding: 16px 48px;
+      font-size: 1.2rem; font-weight: 800; font-family: inherit;
+      border-radius: 100px; letter-spacing: 0.5px;
+      box-shadow: 0 6px 0 #0D47A1, 0 10px 20px rgba(25,118,210,0.3);
+      transition: all 0.15s ease; transform: translateY(0);
+    }
+    .btn-start:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 0 #0D47A1, 0 18px 36px rgba(25,118,210,0.35);
+    }
+    .btn-start:active {
+      transform: translateY(3px);
+      box-shadow: 0 3px 0 #0D47A1, 0 5px 10px rgba(25,118,210,0.25);
+    }
+
+    .btn-stop {
+      cursor: pointer;
+      background: linear-gradient(135deg, #ef5350, #e53935, #c62828);
+      color: white; border: none; padding: 10px 20px;
+      font-size: 0.88rem; font-weight: 700; font-family: inherit;
+      border-radius: 14px; letter-spacing: 0.3px;
+      box-shadow: 0 4px 0 #b71c1c, 0 6px 16px rgba(229,57,53,0.3);
+      transition: all 0.15s ease; transform: translateY(0);
+    }
+    .btn-stop:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 0 #b71c1c, 0 10px 24px rgba(229,57,53,0.35);
+    }
+    .btn-stop:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 #b71c1c, 0 3px 8px rgba(229,57,53,0.3);
+    }
+
+    /* ── Control Panel ── */
+    #control-panel {
+      position: fixed; top: 20px; right: 20px; z-index: 50; pointer-events: all;
+      background: rgba(255,255,255,0.95); border-radius: 24px;
+      box-shadow: 0 10px 36px rgba(0,0,0,0.1), 0 0 0 1px rgba(255,255,255,0.8), 0 0 0 4px rgba(33,150,243,0.18);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      padding: 20px 22px; min-width: 240px;
+      animation: panelSlideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes panelSlideIn {
+      from { opacity: 0; transform: translateX(36px) scale(0.92); }
+      to   { opacity: 1; transform: translateX(0) scale(1); }
+    }
+
+    .ctrl-divider { height: 2px; background: #f2f2f2; margin: 14px 0; border-radius: 2px; }
+
+    /* ── Volume bar ── */
+    #volume-bar-container {
+      height: 16px; border-radius: 100px; overflow: hidden;
+      background: #e8e8e8; margin: 8px 0 10px;
+      border: 2px solid #d8d8d8; box-shadow: inset 0 2px 5px rgba(0,0,0,0.08);
+      position: relative;
+    }
+    #volume-bar {
+      height: 100%; width: 0%; border-radius: 100px;
+      background: linear-gradient(90deg, #4CAF50, #8BC34A, #FFEB3B, #FF9800);
+      background-size: 300% 100%;
+      animation: barShine 1.5s ease infinite;
+      transition: width 0.08s ease-out;
+      position: relative;
+    }
+    #volume-bar::after {
+      content: '';
+      position: absolute; top: 2px; left: 8px; right: 8px; height: 4px;
+      background: rgba(255,255,255,0.35); border-radius: 100px;
+    }
+    @keyframes barShine {
+      0%   { background-position: 0% 50%; }
+      50%  { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* ── Status indicator ── */
+    .status-dot {
+      width: 9px; height: 9px; border-radius: 50%;
+      background: #ccc; display: inline-block; margin-right: 5px;
+      vertical-align: middle; transition: all 0.3s;
+      border: 1.5px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    }
+    .status-dot.loud { background: #4CAF50; box-shadow: 0 0 0 2px rgba(76,175,80,0.25), 0 1px 3px rgba(0,0,0,0.12); animation: dotBounce 0.6s ease infinite; }
+    .status-dot.mid  { background: #FFA726; box-shadow: 0 0 0 2px rgba(255,167,38,0.25), 0 1px 3px rgba(0,0,0,0.12); animation: dotBounce 0.8s ease infinite; }
+    .status-dot.low  { background: #FFEB3B; box-shadow: 0 0 0 2px rgba(255,235,59,0.25), 0 1px 3px rgba(0,0,0,0.12); animation: dotBounce 1s ease infinite; }
+    .status-dot.quiet { background: #26A69A; box-shadow: 0 0 0 2px rgba(38,166,154,0.25), 0 1px 3px rgba(0,0,0,0.08); animation: dotGlow 1.5s ease infinite; }
+
+    @keyframes dotBounce {
+      0%, 100% { transform: scale(1); }
+      50%       { transform: scale(1.35); }
+    }
+
+    @keyframes dotGlow {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50%       { transform: scale(1.15); opacity: 0.8; }
+    }
+
+    /* ── Fish count ── */
+    #fish-count {
+      position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+      background: rgba(255,255,255,0.95); border-radius: 100px;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.1), 0 0 0 1px rgba(255,255,255,0.8);
+      padding: 10px 22px; font-size: 0.9rem; color: #666;
+      font-weight: 700; z-index: 50; pointer-events: none;
+      display: flex; align-items: center; gap: 5px;
+      animation: panelSlideUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes panelSlideUp {
+      from { opacity: 0; transform: translateX(-50%) translateY(18px); }
+      to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+    #fish-count .count-num { color: #1E88E5; font-weight: 900; font-size: 1.1rem; }
+
+    /* ── Timer display ── */
+    #timer-display {
+      position: fixed; bottom: 85px; left: 50%; transform: translateX(-50%);
+      background: rgba(255,255,255,0.9); border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.1), 0 0 0 1px rgba(255,255,255,0.8);
+      padding: 8px 20px; z-index: 50; pointer-events: none;
+      display: flex; align-items: center; gap: 6px;
+      animation: panelSlideUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    #timer-display .time { font-size: 1.4rem; font-weight: 900; color: #1565C0; font-variant-numeric: tabular-nums; }
+    #timer-display .label { font-size: 0.7rem; color: #999; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+
+    /* ── Instructions ── */
+    #instructions {
+      position: fixed; bottom: 140px; right: 20px;
+      background: rgba(255,255,255,0.95); border-radius: 18px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.09), 0 0 0 1px rgba(255,255,255,0.8);
+      padding: 14px 18px; font-size: 0.78rem; color: #888;
+      z-index: 50; pointer-events: none; max-width: 200px;
+      line-height: 1.85; font-weight: 600; animation: panelSlideIn 0.6s ease;
+    }
+    #instructions strong { color: #555; display: block; margin-bottom: 8px; font-size: 0.7rem; letter-spacing: 1px; text-transform: uppercase; }
+
+    /* ── Hidden ── */
+    .hidden { display: none !important; }
+
+    ::selection { background: rgba(33,150,243,0.3); }
+  </style>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+
+<!-- ═══ START PANEL ═══ -->
+<div id="start-panel">
+  <div class="text-6xl mb-3" style="filter: drop-shadow(0 3px 6px rgba(0,0,0,0.12));">
+    &#x1F3A2;&#x1F41F;
+  </div>
+  <h1 class="panel-title-text mb-1">钓鱼静音神器</h1>
+  <p class="panel-subtitle">保持安静，鱼才会游过来哦！</p>
+
+  <button id="start-btn" class="btn-start">
+    &#x1F41F; 开始钓鱼
+  </button>
+
+  <p class="mt-4 text-xs font-bold" style="color: #ccc; letter-spacing: 0.5px;">
+    模拟模式 · 无需麦克风
+  </p>
+</div>
+
+<!-- ═══ CONTROL PANEL ═══ -->
+<div id="control-panel" class="hidden">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+    <span class="status-dot quiet" id="status-indicator"></span>
+    <span class="ctrl-value" id="status-text" style="color:#aaa;font-size:0.88rem;font-weight:700;">等待中</span>
+  </div>
+
+  <div id="volume-bar-container">
+    <div id="volume-bar"></div>
+  </div>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+    <span style="font-size:0.68rem;font-weight:700;color:#ccc;text-transform:uppercase;letter-spacing:1.5px;">音量</span>
+    <span style="font-size:0.78rem;font-weight:800;color:#555;">
+      <span id="volume-percent">0</span><span style="font-size:0.68rem;color:#aaa;">%</span>
+    </span>
+  </div>
+
+  <div class="ctrl-divider"></div>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;">
+    <span style="font-size:0.68rem;font-weight:700;color:#ccc;text-transform:uppercase;letter-spacing:1.5px;">安静时长</span>
+    <span id="quiet-time" style="font-size:0.9rem;font-weight:800;color:#26A69A;">0:00</span>
+  </div>
+
+  <div class="ctrl-divider"></div>
+
+  <button id="stop-btn" class="btn-stop w-full flex items-center justify-center gap-2">
+    &#x25A0; 停止钓鱼
+  </button>
+</div>
+
+<!-- ═══ FISH COUNT ═══ -->
+<div id="fish-count" class="hidden">
+  &#x1F41F; <span>钓到</span>
+  <span class="count-num" id="fish-total">0</span>
+  <span>条鱼</span>
+</div>
+
+<!-- ═══ TIMER DISPLAY ═══ -->
+<div id="timer-display" class="hidden">
+  <span class="time" id="silent-timer">00:00</span>
+  <span class="label">安静计时</span>
+</div>
+
+<!-- ═══ INSTRUCTIONS ═══ -->
+<div id="instructions" class="hidden">
+  <strong>钓鱼技巧</strong>
+  <span style="color:#4CAF50;">保持安静</span> → 鱼会慢慢靠近<br>
+  <span style="color:#FFA726;">发出声音</span> → 鱼会吓跑<br>
+  <span style="color:#1E88E5;">鱼咬钩后</span> → 自动拉竿上鱼<br>
+  <span style="color:#26A69A;">成功钓鱼</span> → 获得奖励积分
+</div>
+
+<script>
+// ============================================================
+// CANVAS SETUP
+// ============================================================
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+let screenW = 0, screenH = 0;
+let waterY = 0;
+let time = 0;
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth * window.devicePixelRatio;
+  canvas.height = window.innerHeight * window.devicePixelRatio;
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+  screenW = window.innerWidth;
+  screenH = window.innerHeight;
+  waterY = screenH * 0.55;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+// ============================================================
+// GLOBAL STATE
+// ============================================================
+let isListening = false, currentVolume = 0, volumeSmooth = 0;
+let fish = [], ripples = [], bubbles = [], particles = [];
+let clouds = [], birds = [];
+let trees = [];
+let groundY = 0;
+let fishCaught = 0;
+let quietTime = 0;
+let fishermanX = 0, fishermanY = 0;
+let hookX = 0, hookY = 0;
+let hookTargetX = 0, hookTargetY = 0;
+let fishBiteProgress = 0;
+let isFishBiting = false;
+let biteTimer = 0;
+let rodAngle = 0;
+let reelProgress = 0;
+let isReeling = false;
+let caughtFishForReel = null; // 追踪正在被钓的鱼
+let fishermanArmAngle = 0;
+let simulatedVolume = 0, simulatedPhase = 0;
+
+function syncDimensions() {
+  screenW = window.innerWidth;
+  screenH = window.innerHeight;
+  waterY = screenH * 0.55;
+  groundY = screenH - 60;
+}
+
+// ============================================================
+// SCENE SETUP
+// ============================================================
+function initScene() {
+  clouds = [];
+  for (let i = 0; i < 6; i++) {
+    clouds.push({
+      x: Math.random() * screenW,
+      y: 40 + Math.random() * 80,
+      w: 100 + Math.random() * 100,
+      speed: 0.15 + Math.random() * 0.2,
+      phase: Math.random() * Math.PI * 2
+    });
+  }
+
+  birds = [];
+  for (let i = 0; i < 4; i++) {
+    birds.push({
+      x: Math.random() * screenW,
+      y: 30 + Math.random() * 60,
+      speed: 0.5 + Math.random() * 0.5,
+      wingPhase: Math.random() * Math.PI * 2,
+      size: 8 + Math.random() * 6
+    });
+  }
+
+  trees = [];
+  // Trees on left and right sides, leaving center clear for fisherman
+  const treeCount = 10;
+  for (let i = 0; i < treeCount; i++) {
+    let tx;
+    if (i < treeCount / 2) {
+      // Left side
+      tx = (screenW * 0.35 / (treeCount / 2)) * i + Math.random() * 60 + 20;
+    } else {
+      // Right side
+      tx = screenW * 0.65 + ((screenW * 0.35) / (treeCount / 2)) * (i - treeCount / 2) + Math.random() * 60;
+    }
+    trees.push({
+      x: tx,
+      y: groundY,
+      scale: 0.6 + Math.random() * 0.4,
+      type: Math.floor(Math.random() * 3),
+      sway: Math.random() * Math.PI * 2,
+      swaySpeed: 0.5 + Math.random() * 0.3
+    });
+  }
+
+  // Initialize fish
+  fish = [];
+  for (let i = 0; i < 5; i++) {
+    spawnFish();
+  }
+
+  // Initialize ripples
+  ripples = [];
+  for (let i = 0; i < 3; i++) {
+    ripples.push({
+      x: 100 + Math.random() * (screenW - 200),
+      y: waterY + 30 + Math.random() * 80,
+      r: 0,
+      maxR: 20 + Math.random() * 30,
+      alpha: 0,
+      speed: 0.3 + Math.random() * 0.2
+    });
+  }
+
+  // Fisherman position - center of screen, sitting on the bank
+  fishermanX = screenW * 0.5;
+  fishermanY = waterY - 5;
+
+  // Hook position - centered above water
+  hookX = screenW * 0.5;
+  hookY = waterY + 60;
+  hookTargetX = hookX;
+  hookTargetY = hookY;
+}
+
+function spawnFish() {
+  const fromLeft = Math.random() > 0.5;
+  fish.push({
+    x: fromLeft ? -50 : screenW + 50,
+    y: waterY + 50 + Math.random() * 100,
+    vx: fromLeft ? 0.8 + Math.random() * 0.5 : -0.8 - Math.random() * 0.5,
+    vy: 0,
+    size: 18 + Math.random() * 12,
+    targetX: null,
+    scared: false,
+    scaredTimer: 0,
+    caught: false,
+    caughtProgress: 0,
+    color: ['#FF7043', '#FFA726', '#FFCA28', '#66BB6A', '#42A5F5'][Math.floor(Math.random() * 5)],
+    tailPhase: Math.random() * Math.PI * 2,
+    wiggle: 0
+  });
+}
+
+// ============================================================
+// AUDIO (Simulated)
+// ============================================================
+function setupAudio() {
+  simulatedVolume = 0;
+  simulatedPhase = 0;
+  isListening = true;
+  quietTime = 0;
+  return true;
+}
+
+function stopAudio() {
+  isListening = false;
+  simulatedVolume = 0;
+  currentVolume = 0;
+  volumeSmooth = 0;
+  quietTime = 0;
+  fishCaught = 0;
+  document.getElementById('status-indicator').className = 'status-dot quiet';
+  document.getElementById('status-text').textContent = '已停止';
+  document.getElementById('status-text').style.color = '#aaa';
+  document.getElementById('volume-bar').style.width = '0%';
+  document.getElementById('start-panel').classList.remove('hidden');
+  document.getElementById('control-panel').classList.add('hidden');
+  document.getElementById('fish-count').classList.add('hidden');
+  document.getElementById('timer-display').classList.add('hidden');
+  document.getElementById('instructions').classList.add('hidden');
+  fish = [];
+  particles = [];
+  isFishBiting = false;
+  fishBiteProgress = 0;
+  initScene();
+}
+
+function getVolume() {
+  if (!isListening) return 0;
+  simulatedPhase += 0.016;
+  simulatedVolume = 8
+    + Math.sin(simulatedPhase * 0.5) * 5
+    + Math.sin(simulatedPhase * 1.8) * 3
+    + Math.sin(simulatedPhase * 0.2) * 4;
+  simulatedVolume += (Math.random() - 0.5) * 6;
+  return Math.max(0, Math.min(95, simulatedVolume));
+}
+
+// ============================================================
+// FISH LOGIC
+// ============================================================
+function updateFish() {
+  const hookX = screenW * 0.5;
+  const hookY = waterY + 60;
+
+  fish.forEach(f => {
+    if (f.caught) {
+      f.caughtProgress += 0.02;
+      if (f.caughtProgress >= 1) {
+        // Fish caught!
+        fishCaught++;
+        document.getElementById('fish-total').textContent = fishCaught;
+        spawnCatchParticles(f.x, f.y, f.color);
+        f.removed = true; // 标记为已移除
+        // Respawn fish
+        setTimeout(() => spawnFish(), 2000);
+      }
+      return;
+    }
+
+    // Scared timer
+    if (f.scared) {
+      f.scaredTimer--;
+      if (f.scaredTimer <= 0) {
+        f.scared = false;
+      }
+      // Swim away fast
+      f.x += f.vx * 3;
+      f.y += Math.sin(time * 3 + f.tailPhase) * 2;
+      return;
+    }
+
+    // Volume affects fish behavior
+    if (volumeSmooth > 25) {
+      // Too loud! Fish get scared
+      f.scared = true;
+      f.scaredTimer = 60 + Math.random() * 60;
+      f.vx = f.x < hookX ? -1.5 : 1.5;
+      spawnRipple(f.x, f.y);
+    } else if (volumeSmooth < 10) {
+      // Quiet! Fish approach the hook
+      if (!f.targetX) {
+        f.targetX = hookX + (Math.random() - 0.5) * 100;
+      }
+      const dx = f.targetX - f.x;
+      const dy = hookY - f.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist > 20) {
+        f.x += (dx / dist) * 0.5;
+        f.y += (dy / dist) * 0.3;
+      }
+
+      // Random wiggle
+      f.wiggle = Math.sin(time * 5 + f.tailPhase) * 0.3;
+
+      // Check if fish is near hook and no bite happening
+      if (dist < 30 && !isFishBiting && Math.random() < 0.002) {
+        // Fish bites!
+        isFishBiting = true;
+        fishBiteProgress = 0;
+        biteTimer = 180; // 3 seconds at 60fps to react
+        f.caught = true; // 标记这条鱼被钓中
+        f.caughtProgress = 0;
+        spawnRipple(hookX, hookY);
+      }
+    } else {
+      // Medium noise - fish wander
+      f.x += f.vx * 0.5;
+      f.y += Math.sin(time * 2 + f.tailPhase) * 0.5;
+      f.targetX = null;
+
+      // Keep fish in water bounds
+      if (f.y > waterY + 150) f.y = waterY + 150;
+      if (f.y < waterY + 20) f.y = waterY + 20;
+    }
+
+    // Keep fish in horizontal bounds
+    if (f.x < 50) { f.x = 50; f.vx = Math.abs(f.vx); }
+    if (f.x > screenW - 50) { f.x = screenW - 50; f.vx = -Math.abs(f.vx); }
+  });
+
+  // Remove fish that swam off screen (and respawn)
+  fish = fish.filter(f => !f.removed && f.x > -100 && f.x < screenW + 100);
+  while (fish.length < 4) {
+    spawnFish();
+  }
+}
+
+function spawnRipple(x, y) {
+  ripples.push({
+    x: x,
+    y: y,
+    r: 0,
+    maxR: 30 + Math.random() * 20,
+    alpha: 0.6,
+    speed: 0.5 + Math.random() * 0.3
+  });
+}
+
+function updateRipples() {
+  ripples.forEach(r => {
+    r.r += r.speed;
+    r.alpha -= 0.008;
+  });
+  ripples = ripples.filter(r => r.alpha > 0 && r.r < r.maxR);
+}
+
+function spawnCatchParticles(x, y, color) {
+  for (let i = 0; i < 15; i++) {
+    particles.push({
+      x: x,
+      y: y,
+      vx: (Math.random() - 0.5) * 4,
+      vy: -2 - Math.random() * 3,
+      size: 4 + Math.random() * 6,
+      color: i % 2 === 0 ? color : '#FFD700',
+      life: 1,
+      decay: 0.02 + Math.random() * 0.02
+    });
+  }
+  // Add sparkle stars
+  for (let i = 0; i < 8; i++) {
+    particles.push({
+      x: x + (Math.random() - 0.5) * 60,
+      y: y + (Math.random() - 0.5) * 60,
+      vx: (Math.random() - 0.5) * 2,
+      vy: -1 - Math.random() * 2,
+      size: 3 + Math.random() * 4,
+      color: '#FFD700',
+      life: 1,
+      decay: 0.015 + Math.random() * 0.01,
+      star: true
+    });
+  }
+}
+
+function updateParticles() {
+  particles.forEach(p => {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.1; // gravity
+    p.life -= p.decay;
+  });
+  particles = particles.filter(p => p.life > 0);
+}
+
+// ============================================================
+// FISH BITE LOGIC
+// ============================================================
+function updateBite() {
+  if (isReeling) {
+    // Auto reeling animation - fish comes up automatically
+    reelProgress += 0.015;
+    if (reelProgress >= 1) {
+      // Fish caught!
+      fishCaught++;
+      document.getElementById('fish-total').textContent = fishCaught;
+      spawnCatchParticles(hookX, fishermanY - 60, '#FF7043');
+      // 找到被标记的鱼并移除
+      const reeledFish = fish.find(f => f.caught);
+      if (reeledFish) {
+        reeledFish.removed = true;
+      }
+      isReeling = false;
+      reelProgress = 0;
+      isFishBiting = false;
+      fishBiteProgress = 0;
+      biteTimer = 0;
+      rodAngle = 0;
+      // Respawn fish
+      setTimeout(() => spawnFish(), 2000);
+    }
+    return;
+  }
+
+  if (!isFishBiting) return;
+
+  fishBiteProgress += 0.008;
+  biteTimer--;
+
+  // Hook moves with fish bite
+  hookTargetY = waterY + 60 + Math.sin(time * 8) * 5 * fishBiteProgress;
+
+  // Rod tip shakes
+  rodAngle = Math.sin(time * 10) * 0.05 * fishBiteProgress;
+
+  // Fisherman arm pulls back when fish bites
+  fishermanArmAngle = Math.sin(time * 6) * 0.15 * fishBiteProgress;
+
+  // Bite timer ran out - fish escaped!
+  if (biteTimer <= 0) {
+    isFishBiting = false;
+    fishBiteProgress = 0;
+    biteTimer = 0;
+    rodAngle = 0;
+    fishermanArmAngle = 0;
+    // Make a fish bite and escape
+    const nearFish = fish.find(f => f.caught);
+    if (nearFish) {
+      nearFish.caught = false;
+      nearFish.caughtProgress = 0;
+      nearFish.scared = true;
+      nearFish.scaredTimer = 120;
+      nearFish.vx = nearFish.x < hookX ? -2 : 2;
+    }
+  }
+
+  // Auto catch after 3 seconds - fisherman reels in automatically
+  if (fishBiteProgress >= 1) {
+    isReeling = true;
+    reelProgress = 0;
+  }
+}
+
+// ============================================================
+// DRAWING
+// ============================================================
+function drawBackground() {
+  // Sky gradient
+  const sky = ctx.createLinearGradient(0, 0, 0, waterY);
+  sky.addColorStop(0, '#87CEEB');
+  sky.addColorStop(0.5, '#B3E5FC');
+  sky.addColorStop(1, '#E1F5FE');
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, screenW, waterY);
+
+  // Sun
+  const sx = screenW - 120, sy = 80;
+  ctx.save();
+  ctx.translate(sx, sy);
+  ctx.filter = 'drop-shadow(0 0 20px rgba(255,200,0,0.6))';
+  ctx.beginPath();
+  ctx.arc(0, 0, 45, 0, Math.PI * 2);
+  ctx.fillStyle = '#FFE082';
+  ctx.fill();
+  ctx.filter = 'none';
+  // Sun rays
+  ctx.strokeStyle = '#FFD54F';
+  ctx.lineWidth = 4;
+  ctx.lineCap = 'round';
+  for (let i = 0; i < 10; i++) {
+    const a = (i / 10) * Math.PI * 2 + time * 0.1;
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(a) * 52, Math.sin(a) * 52);
+    ctx.lineTo(Math.cos(a) * 65, Math.sin(a) * 65);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // Clouds
+  clouds.forEach(c => {
+    c.x += c.speed;
+    if (c.x > screenW + c.w) c.x = -c.w;
+
+    const cy = c.y + Math.sin(time * 0.3 + c.phase) * 8;
+    ctx.save();
+    ctx.globalAlpha = 0.95;
+    ctx.fillStyle = '#fff';
+
+    ctx.beginPath();
+    ctx.arc(c.x + c.w * 0.3, cy, c.w * 0.22, 0, Math.PI * 2);
+    ctx.arc(c.x + c.w * 0.5, cy - c.w * 0.08, c.w * 0.28, 0, Math.PI * 2);
+    ctx.arc(c.x + c.w * 0.72, cy, c.w * 0.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.beginPath();
+    ctx.arc(c.x + c.w * 0.38, cy - c.w * 0.08, c.w * 0.12, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  });
+
+  // Birds
+  birds.forEach(b => {
+    b.x += b.speed;
+    if (b.x > screenW + 50) b.x = -50;
+    b.wingPhase += 0.15;
+
+    const wingY = Math.sin(b.wingPhase) * 4;
+    ctx.save();
+    ctx.strokeStyle = '#37474F';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(b.x - b.size, b.y + wingY);
+    ctx.quadraticCurveTo(b.x, b.y - 3, b.x + b.size, b.y + wingY);
+    ctx.stroke();
+    ctx.restore();
+  });
+
+  // Distant hills (background)
+  ctx.save();
+  const hillGrad = ctx.createLinearGradient(0, waterY - 80, 0, waterY);
+  hillGrad.addColorStop(0, '#81C784');
+  hillGrad.addColorStop(1, '#66BB6A');
+  ctx.fillStyle = hillGrad;
+  ctx.beginPath();
+  ctx.moveTo(0, waterY);
+  for (let x = 0; x <= screenW; x += 30) {
+    const hy = waterY - 50 + Math.sin(x * 0.008) * 25 + Math.sin(x * 0.015) * 15;
+    ctx.lineTo(x, hy);
+  }
+  ctx.lineTo(screenW, waterY);
+  ctx.lineTo(0, waterY);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+
+  // Trees in background
+  trees.forEach(t => {
+    t.sway += t.swaySpeed * 0.01;
+    const swayAmount = Math.sin(t.sway) * 3 * t.scale;
+    drawTree(t.x + swayAmount, t.y, t.scale, t.type);
+  });
+
+  // Ground/bank
+  const bankGrad = ctx.createLinearGradient(0, waterY - 20, 0, waterY + 30);
+  bankGrad.addColorStop(0, '#8D6E63');
+  bankGrad.addColorStop(0.3, '#6D4C41');
+  bankGrad.addColorStop(1, '#5D4037');
+  ctx.fillStyle = bankGrad;
+  ctx.beginPath();
+  ctx.moveTo(0, waterY - 20);
+  for (let x = 0; x <= screenW; x += 20) {
+    const by = waterY - 20 + Math.sin(x * 0.03) * 5;
+    ctx.lineTo(x, by);
+  }
+  ctx.lineTo(screenW, waterY + 30);
+  ctx.lineTo(0, waterY + 30);
+  ctx.closePath();
+  ctx.fill();
+
+  // Grass on bank
+  ctx.strokeStyle = '#558B2F';
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  for (let i = 0; i < screenW; i += 15) {
+    const gx = i;
+    const gy = waterY - 20 + Math.sin(i * 0.03) * 5;
+    const sway = Math.sin(time * 2 + i * 0.1) * 3;
+    ctx.beginPath();
+    ctx.moveTo(gx, gy);
+    ctx.quadraticCurveTo(gx + sway, gy - 8, gx + sway * 1.5, gy - 15 - Math.random() * 5);
+    ctx.stroke();
+  }
+}
+
+function drawTree(x, y, scale, type) {
+  const h = 120 * scale;
+  const tw = 12 * scale;
+
+  // Trunk
+  ctx.fillStyle = '#5D4037';
+  ctx.beginPath();
+  ctx.moveTo(x - tw * 0.6, y);
+  ctx.quadraticCurveTo(x - tw * 0.3, y - h * 0.5, x - tw * 0.2, y - h);
+  ctx.lineTo(x + tw * 0.2, y - h);
+  ctx.quadraticCurveTo(x + tw * 0.3, y - h * 0.5, x + tw * 0.6, y);
+  ctx.closePath();
+  ctx.fill();
+
+  // Leaves based on type
+  const colors = [
+    ['#4CAF50', '#66BB6A', '#81C784'],
+    ['#F48FB1', '#F8BBD9', '#FFFFFF'],
+    ['#FF7043', '#FFA726', '#FFCA28']
+  ];
+  const leafColors = colors[type % 3];
+
+  if (type === 1) {
+    // Cherry blossom style
+    for (let i = 0; i < 5; i++) {
+      const lx = x + Math.cos(i * 1.25) * h * 0.3;
+      const ly = y - h * 0.7 + Math.sin(i * 1.25) * h * 0.2;
+      ctx.fillStyle = leafColors[i % 3];
+      ctx.beginPath();
+      ctx.arc(lx, ly, 15 * scale, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else {
+    // Regular tree crown
+    const crownGrad = ctx.createRadialGradient(x, y - h * 0.8, 5, x, y - h * 0.8, h * 0.5);
+    crownGrad.addColorStop(0, leafColors[0]);
+    crownGrad.addColorStop(0.6, leafColors[1]);
+    crownGrad.addColorStop(1, leafColors[2]);
+    ctx.fillStyle = crownGrad;
+    ctx.beginPath();
+    ctx.arc(x, y - h * 0.8, h * 0.45, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawWater() {
+  // Water base
+  const waterGrad = ctx.createLinearGradient(0, waterY, 0, screenH);
+  waterGrad.addColorStop(0, '#29B6F6');
+  waterGrad.addColorStop(0.3, '#0288D1');
+  waterGrad.addColorStop(0.7, '#01579B');
+  waterGrad.addColorStop(1, '#0D47A1');
+  ctx.fillStyle = waterGrad;
+  ctx.fillRect(0, waterY, screenW, screenH - waterY);
+
+  // Water surface shine
+  ctx.fillStyle = 'rgba(255,255,255,0.15)';
+  ctx.beginPath();
+  ctx.moveTo(0, waterY);
+  for (let x = 0; x <= screenW; x += 30) {
+    const wy = waterY + Math.sin(x * 0.02 + time * 2) * 3;
+    ctx.lineTo(x, wy);
+  }
+  ctx.lineTo(screenW, waterY + 15);
+  ctx.lineTo(0, waterY + 15);
+  ctx.closePath();
+  ctx.fill();
+
+  // Water waves
+  ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+  ctx.lineWidth = 2;
+  for (let i = 0; i < 5; i++) {
+    ctx.beginPath();
+    for (let x = 0; x <= screenW; x += 10) {
+      const wy = waterY + 20 + i * 30 + Math.sin(x * 0.03 + time * 1.5 + i) * 4;
+      x === 0 ? ctx.moveTo(x, wy) : ctx.lineTo(x, wy);
+    }
+    ctx.stroke();
+  }
+
+  // Ripples
+  ripples.forEach(r => {
+    ctx.save();
+    ctx.globalAlpha = r.alpha;
+    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(r.x, r.y, r.r * 1.5, r.r * 0.6, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  });
+
+  // Bubbles
+  for (let i = 0; i < 8; i++) {
+    const bx = (time * 20 + i * 150) % screenW;
+    const by = waterY + 30 + Math.sin(time * 2 + i) * 20 + i * 15;
+    ctx.save();
+    ctx.globalAlpha = 0.4;
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(bx, by, 2 + Math.sin(i) * 1.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.beginPath();
+    ctx.arc(bx - 1, by - 1, 0.8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+function drawFish() {
+  fish.forEach(f => {
+    ctx.save();
+    ctx.translate(f.x, f.y);
+
+    const dir = f.vx > 0 ? 1 : -1;
+    ctx.scale(dir, 1);
+
+    const wiggle = f.scared ? Math.sin(time * 15) * 0.2 : f.wiggle;
+    ctx.rotate(wiggle);
+
+    // Fish body
+    ctx.fillStyle = f.color;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, f.size, f.size * 0.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Tail
+    ctx.beginPath();
+    const tailWag = Math.sin(time * 8 + f.tailPhase) * 0.3;
+    ctx.moveTo(-f.size * 0.8, 0);
+    ctx.lineTo(-f.size * 1.5, -f.size * 0.4 + tailWag * f.size);
+    ctx.lineTo(-f.size * 1.5, f.size * 0.4 + tailWag * f.size);
+    ctx.closePath();
+    ctx.fill();
+
+    // Eye
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(f.size * 0.5, -f.size * 0.1, f.size * 0.15, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.arc(f.size * 0.55, -f.size * 0.1, f.size * 0.08, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Fins
+    ctx.fillStyle = f.color;
+    ctx.globalAlpha = 0.7;
+    ctx.beginPath();
+    ctx.moveTo(0, -f.size * 0.4);
+    ctx.quadraticCurveTo(f.size * 0.2, -f.size * 0.8, -f.size * 0.3, -f.size * 0.5);
+    ctx.closePath();
+    ctx.fill();
+
+    // Highlight
+    ctx.globalAlpha = 0.3;
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.ellipse(f.size * 0.2, -f.size * 0.2, f.size * 0.3, f.size * 0.15, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+
+    // Caught animation
+    if (f.caught) {
+      const progress = f.caughtProgress;
+      const startX = f.x;
+      const startY = f.y;
+      const endX = hookX;
+      const endY = hookY - 30;
+
+      f.x = startX + (endX - startX) * progress;
+      f.y = startY + (endY - startY) * progress - Math.sin(progress * Math.PI) * 50;
+    }
+  });
+}
+
+function drawFisherman() {
+  const fx = fishermanX;
+  const fy = fishermanY;
+
+  ctx.save();
+
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.15)';
+  ctx.beginPath();
+  ctx.ellipse(fx, fy + 5, 25, 8, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Body (sitting pose)
+  ctx.fillStyle = '#1976D2'; // Blue shirt
+  ctx.beginPath();
+  ctx.ellipse(fx, fy - 25, 18, 22, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Head
+  ctx.fillStyle = '#FFCC80'; // Skin tone
+  ctx.beginPath();
+  ctx.arc(fx, fy - 55, 14, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Hair
+  ctx.fillStyle = '#5D4037';
+  ctx.beginPath();
+  ctx.arc(fx, fy - 60, 12, Math.PI, Math.PI * 2);
+  ctx.fill();
+
+  // Eyes
+  ctx.fillStyle = '#333';
+  ctx.beginPath();
+  ctx.arc(fx - 5, fy - 56, 2, 0, Math.PI * 2);
+  ctx.arc(fx + 5, fy - 56, 2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Smile
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(fx, fy - 52, 5, 0.2, Math.PI - 0.2);
+  ctx.stroke();
+
+  // Hat
+  ctx.fillStyle = '#FFC107'; // Yellow hat
+  ctx.beginPath();
+  ctx.ellipse(fx, fy - 68, 18, 6, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#FFA000';
+  ctx.beginPath();
+  ctx.arc(fx, fy - 72, 10, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Arms holding rod
+  ctx.save();
+  ctx.translate(fx + 15, fy - 35);
+  ctx.rotate(-0.3 + fishermanArmAngle);
+
+  // Upper arm
+  ctx.fillStyle = '#1976D2';
+  ctx.beginPath();
+  ctx.ellipse(8, 5, 6, 12, 0.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Hand
+  ctx.fillStyle = '#FFCC80';
+  ctx.beginPath();
+  ctx.arc(15, 12, 5, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+
+  // Fishing rod
+  const rodStartX = fx + 20;
+  const rodStartY = fy - 30;
+  const rodLength = 160;
+  const rodEndX = rodStartX + Math.cos(-0.5 + rodAngle) * rodLength;
+  const rodEndY = rodStartY + Math.sin(-0.5 + rodAngle) * rodLength;
+
+  // Rod shadow
+  ctx.strokeStyle = 'rgba(0,0,0,0.1)';
+  ctx.lineWidth = 7;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(rodStartX + 2, rodStartY + 2);
+  ctx.lineTo(rodEndX + 2, rodEndY + 2);
+  ctx.stroke();
+
+  // Rod
+  ctx.strokeStyle = '#6D4C41';
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.moveTo(rodStartX, rodStartY);
+  ctx.lineTo(rodEndX, rodEndY);
+  ctx.stroke();
+
+  // Rod highlight
+  ctx.strokeStyle = '#8D6E63';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(rodStartX, rodStartY - 1);
+  ctx.lineTo(rodEndX, rodEndY - 1);
+  ctx.stroke();
+
+  // Reel
+  ctx.fillStyle = '#455A64';
+  ctx.beginPath();
+  ctx.arc(rodStartX + 20, rodStartY, 6, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Fishing line
+  let currentHookY = hookY;
+  if (isReeling) {
+    // During reeling, hook comes up
+    currentHookY = waterY + 60 - reelProgress * 100;
+  }
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(rodEndX, rodEndY);
+
+  // Bobbing line with fish bite
+  const lineSway = Math.sin(time * 3) * 5 * (isFishBiting ? fishBiteProgress : 0);
+  ctx.quadraticCurveTo(
+    rodEndX + (hookX - rodEndX) * 0.5 + lineSway,
+    rodEndY + (currentHookY - rodEndY) * 0.5 + 15,
+    hookX,
+    currentHookY
+  );
+  ctx.stroke();
+
+  // Hook
+  ctx.fillStyle = '#78909C';
+  ctx.beginPath();
+  ctx.arc(hookX, currentHookY, 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Hook shine
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.beginPath();
+  ctx.arc(hookX - 1, currentHookY - 1, 1.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Draw caught fish on hook during reeling
+  if (isReeling) {
+    drawCaughtFishOnHook(hookX, currentHookY);
+  }
+
+  ctx.restore();
+}
+
+function drawCaughtFishOnHook(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+
+  // Fish being reeled in
+  const size = 15;
+  ctx.fillStyle = '#FF7043';
+  ctx.beginPath();
+  ctx.ellipse(0, 0, size, size * 0.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Tail
+  ctx.beginPath();
+  ctx.moveTo(-size * 0.8, 0);
+  ctx.lineTo(-size * 1.4, -size * 0.35);
+  ctx.lineTo(-size * 1.4, size * 0.35);
+  ctx.closePath();
+  ctx.fill();
+
+  // Eye
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(size * 0.4, -size * 0.1, size * 0.12, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#000';
+  ctx.beginPath();
+  ctx.arc(size * 0.45, -size * 0.1, size * 0.06, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Sparkles around fish
+  ctx.fillStyle = '#FFD700';
+  for (let i = 0; i < 4; i++) {
+    const angle = time * 3 + i * Math.PI / 2;
+    const dist = 20 + Math.sin(time * 5 + i) * 5;
+    ctx.beginPath();
+    ctx.arc(Math.cos(angle) * dist, Math.sin(angle) * dist, 3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+function drawParticles() {
+  particles.forEach(p => {
+    ctx.save();
+    ctx.globalAlpha = p.life;
+    ctx.translate(p.x, p.y);
+
+    if (p.star) {
+      // Draw star
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      for (let i = 0; i < 5; i++) {
+        const angle = (i * 4 * Math.PI) / 5 - Math.PI / 2;
+        const r = i === 0 ? p.size : p.size;
+        ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
+      }
+      ctx.closePath();
+      ctx.fill();
+    } else {
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(0, 0, p.size * p.life, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.restore();
+  });
+}
+
+function drawBiteIndicator() {
+  if (!isFishBiting) return;
+
+  const hookScreenX = hookX;
+  const hookScreenY = waterY - 80; // Above the fisherman
+
+  ctx.save();
+
+  // Warning text
+  const pulse = Math.sin(time * 10) * 0.2 + 1;
+  ctx.font = `bold ${18 * pulse}px Nunito`;
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#FF5722';
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 3;
+  ctx.strokeText('鱼咬钩了!', hookScreenX, hookScreenY);
+  ctx.fillText('鱼咬钩了!', hookScreenX, hookScreenY);
+
+  // Progress bar
+  const barWidth = 80;
+  const barHeight = 10;
+  const barX = hookScreenX - barWidth / 2;
+  const barY = hookScreenY + 10;
+  const progress = Math.min(1, (180 - biteTimer) / 180);
+
+  ctx.fillStyle = 'rgba(0,0,0,0.2)';
+  ctx.beginPath();
+  ctx.roundRect(barX, barY, barWidth, barHeight, 5);
+  ctx.fill();
+
+  ctx.fillStyle = '#FF5722';
+  ctx.beginPath();
+  ctx.roundRect(barX, barY, barWidth * progress, barHeight, 5);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+// ============================================================
+// UI
+// ============================================================
+function updateUI(vol) {
+  const volRounded = Math.round(vol);
+  document.getElementById('volume-bar').style.width = volRounded + '%';
+  document.getElementById('volume-percent').textContent = volRounded;
+
+  const dot = document.getElementById('status-indicator');
+  const txt = document.getElementById('status-text');
+
+  if (isFishBiting) {
+    dot.className = 'status-dot loud';
+    txt.textContent = '鱼咬钩了!';
+    txt.style.color = '#FF5722';
+  } else if (vol > 25) {
+    dot.className = 'status-dot loud';
+    txt.textContent = '太吵了!';
+    txt.style.color = '#4CAF50';
+  } else if (vol > 10) {
+    dot.className = 'status-dot mid';
+    txt.textContent = '保持安静...';
+    txt.style.color = '#FFA726';
+  } else {
+    dot.className = 'status-dot quiet';
+    txt.textContent = '安静中...';
+    txt.style.color = '#26A69A';
+  }
+}
+
+function formatTime(seconds) {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+// ============================================================
+// MAIN LOOP
+// ============================================================
+function animate() {
+  time += 0.016;
+
+  if (isListening) {
+    currentVolume = getVolume();
+    volumeSmooth = volumeSmooth * 0.7 + currentVolume * 0.3;
+    updateUI(volumeSmooth);
+
+    // Track quiet time
+    if (volumeSmooth < 10 && !isFishBiting) {
+      quietTime += 0.016;
+    }
+    document.getElementById('quiet-time').textContent = formatTime(quietTime);
+    document.getElementById('silent-timer').textContent = formatTime(quietTime);
+  }
+
+  // Clear and draw
+  ctx.clearRect(0, 0, screenW, screenH);
+
+  drawBackground();
+  drawWater();
+  drawFisherman(); // 绘制渔夫和鱼竿
+  drawFish();
+  drawBiteIndicator();
+  drawParticles();
+
+  // Update logic
+  if (isListening) {
+    updateFish();
+    updateRipples();
+    updateParticles();
+    updateBite();
+  }
+
+  requestAnimationFrame(animate);
+}
+
+// ============================================================
+// EVENTS
+// ============================================================
+document.getElementById('start-btn').addEventListener('click', async () => {
+  if (await setupAudio()) {
+    ['start-panel', 'control-panel', 'fish-count', 'timer-display', 'instructions'].forEach(id => {
+      document.getElementById(id).classList.toggle('hidden',
+        id !== 'control-panel' && id !== 'fish-count' && id !== 'timer-display' && id !== 'instructions');
+    });
+    syncDimensions();
+    initScene();
+    animate();
+  }
+});
+
+document.getElementById('stop-btn').addEventListener('click', () => {
+  stopAudio();
+});
+
+// Keyboard shortcut to "reel in" when fish bites - now instant catch
+document.addEventListener('keydown', (e) => {
+  if (e.code === 'Space' && isFishBiting && !isReeling) {
+    // Instant catch when pressing space
+    isReeling = true;
+    reelProgress = 0;
+    isFishBiting = false;
+    fishBiteProgress = 1;
+    biteTimer = 0;
+  }
+});
+
+// Also allow click to reel in
+canvas.addEventListener('click', () => {
+  if (isFishBiting && isListening && !isReeling) {
+    // Instant catch on click
+    isReeling = true;
+    reelProgress = 0;
+    isFishBiting = false;
+    fishBiteProgress = 1;
+    biteTimer = 0;
+  }
+});
+
+// Init
+initScene();
+animate();
+</script>
+</body>
+</html>

@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>正弦定理 - 高中数学公式可视化</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: "PingFang SC", "Microsoft YaHei", "SimHei", sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+            transition: all 0.3s ease;
+        }
+        body.light-theme {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: #333;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            text-align: center;
+            padding: 30px 0;
+        }
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #00d4ff, #7c3aed);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .formula-box {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px 30px;
+            margin: 20px auto;
+            display: inline-block;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        body.light-theme .formula-box {
+            background: rgba(255,255,255,0.8);
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+        .formula {
+            font-size: 2em;
+            color: #00d4ff;
+            font-family: "Times New Roman", serif;
+        }
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            background: rgba(255,255,255,0.2);
+            color: #fff;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+        body.light-theme .theme-toggle {
+            background: rgba(0,0,0,0.1);
+            color: #333;
+        }
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 30px;
+            margin-top: 20px;
+        }
+        #plot {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            min-height: 600px;
+        }
+        body.light-theme #plot {
+            background: rgba(255,255,255,0.9);
+        }
+        .control-panel {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        body.light-theme .control-panel {
+            background: rgba(255,255,255,0.8);
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+        .control-group {
+            margin-bottom: 25px;
+        }
+        .control-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+            color: #00d4ff;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: rgba(255,255,255,0.2);
+            outline: none;
+            -webkit-appearance: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #00d4ff;
+            cursor: pointer;
+        }
+        .value-display {
+            text-align: right;
+            font-size: 1.2em;
+            margin-top: 5px;
+            color: #fff;
+        }
+        body.light-theme .value-display {
+            color: #333;
+        }
+        .result-panel {
+            background: rgba(0,212,255,0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        body.light-theme .result-panel {
+            background: rgba(0,212,255,0.2);
+        }
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .result-value {
+            color: #00d4ff;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        .conclusion {
+            background: linear-gradient(90deg, rgba(0,212,255,0.2), rgba(124,58,237,0.2));
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            text-align: center;
+            font-size: 1.3em;
+        }
+        .hint {
+            background: rgba(255,193,7,0.2);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 0.95em;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" onclick="toggleTheme()">🌙 深色/浅色</button>
+    
+    <div class="container">
+        <header>
+            <h1>📐 正弦定理</h1>
+            <div class="formula-box">
+                <div class="formula">a/sinA = b/sinB = c/sinC = 2R</div>
+            </div>
+        </header>
+        
+        <div class="main-content">
+            <div id="plot"></div>
+            
+            <div class="control-panel">
+                <h2 style="margin-bottom: 20px; color: #00d4ff;">🎛️ 参数控制</h2>
+                
+                <div class="control-group">
+                    <label>∠A 角度 (°)</label>
+                    <input type="range" id="angleA" min="20" max="100" value="60">
+                    <div class="value-display" id="angleA-value">60°</div>
+                </div>
+                
+                <div class="control-group">
+                    <label>∠B 角度 (°)</label>
+                    <input type="range" id="angleB" min="20" max="100" value="50">
+                    <div class="value-display" id="angleB-value">50°</div>
+                </div>
+                
+                <div class="control-group">
+                    <label>外接圆半径 R</label>
+                    <input type="range" id="radiusR" min="50" max="150" value="100">
+                    <div class="value-display" id="radiusR-value">100</div>
+                </div>
+                
+                <div class="result-panel">
+                    <h3 style="margin-bottom: 15px; color: #00d4ff;">📊 计算结果</h3>
+                    <div class="result-item">
+                        <span>边 a =</span>
+                        <span class="result-value" id="sideA">--</span>
+                    </div>
+                    <div class="result-item">
+                        <span>边 b =</span>
+                        <span class="result-value" id="sideB">--</span>
+                    </div>
+                    <div class="result-item">
+                        <span>边 c =</span>
+                        <span class="result-value" id="sideC">--</span>
+                    </div>
+                    <div class="result-item">
+                        <span>∠C =</span>
+                        <span class="result-value" id="angleC">--</span>
+                    </div>
+                    <div class="result-item">
+                        <span>2R =</span>
+                        <span class="result-value" id="twiceR">--</span>
+                    </div>
+                </div>
+                
+                <div class="conclusion">
+                    ✓ 无论三角形如何变化<br>
+                    a/sinA = b/sinB = c/sinC = 2R 恒成立
+                </div>
+                
+                <div class="hint">
+                    💡 提示：拖动滑块改变角度，观察各边长度和比例关系。正弦定理揭示了三角形边角之间的内在联系。
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isDarkTheme = true;
+        
+        function toggleTheme() {
+            isDarkTheme = !isDarkTheme;
+            document.body.classList.toggle('light-theme');
+            updatePlot();
+        }
+        
+        function degToRad(deg) {
+            return deg * Math.PI / 180;
+        }
+        
+        function radToDeg(rad) {
+            return rad * 180 / Math.PI;
+        }
+        
+        function updatePlot() {
+            const angleA = parseFloat(document.getElementById('angleA').value);
+            const angleB = parseFloat(document.getElementById('angleB').value);
+            const R = parseFloat(document.getElementById('radiusR').value);
+            
+            const angleC = 180 - angleA - angleB;
+            
+            // 计算边长 (使用正弦定理: a = 2R * sinA)
+            const sideA = 2 * R * Math.sin(degToRad(angleA));
+            const sideB = 2 * R * Math.sin(degToRad(angleB));
+            const sideC = 2 * R * Math.sin(degToRad(angleC));
+            
+            // 更新显示
+            document.getElementById('angleA-value').textContent = angleA + '°';
+            document.getElementById('angleB-value').textContent = angleB + '°';
+            document.getElementById('radiusR-value').textContent = R;
+            document.getElementById('angleC').textContent = angleC.toFixed(1) + '°';
+            document.getElementById('sideA').textContent = sideA.toFixed(2);
+            document.getElementById('sideB').textContent = sideB.toFixed(2);
+            document.getElementById('sideC').textContent = sideC.toFixed(2);
+            document.getElementById('twiceR').textContent = (2 * R).toFixed(2);
+            
+            // 计算三角形顶点坐标
+            // 放置A在原点, B在x轴上
+            const ax = 0, ay = 0;
+            const bx = sideC, by = 0;
+            
+            // 用余弦定理求C点坐标
+            const cosA = Math.cos(degToRad(angleA));
+            const sinA = Math.sin(degToRad(angleA));
+            const cx = sideB * cosA;
+            const cy = sideB * sinA;
+            
+            // 外接圆圆心 (三角形外心)
+            const midABx = bx / 2;
+            const midABy = by / 2;
+            const midBCx = (bx + cx) / 2;
+            const midBCy = cy / 2;
+            
+            // 外心计算
+            const m1 = (bx - ax) / (by - ay + 0.0001);
+            const m2 = (cx - bx) / (cy - by + 0.0001);
+            const cx_center = (m1 * m2 * (ay - cy) + m1 * (bx + cx) - m2 * (ax + bx)) / (2 * (m1 - m2));
+            const cy_center = -1/m1 * (cx_center - midABx) + midABy;
+            
+            // 绘制三角形
+            const triangleX = [ax, bx, cx, ax];
+            const triangleY = [ay, by, cy, ay];
+            
+            // 绘制外接圆
+            const circlePoints = [];
+            for (let i = 0; i <= 100; i++) {
+                const theta = 2 * Math.PI * i / 100;
+                circlePoints.push({
+                    x: cx_center + R * Math.cos(theta),
+                    y: cy_center + R * Math.sin(theta)
+                });
+            }
+            const circleX = circlePoints.map(p => p.x);
+            const circleY = circlePoints.map(p => p.y);
+            
+            // 标注点
+            const pointsX = [ax, bx, cx];
+            const pointsY = [ay, by, cy];
+            const labels = ['A', 'B', 'C'];
+            
+            // 边长标注位置
+            const midAB_x = (ax + bx) / 2;
+            const midAB_y = (ay + by) / 2 - 15;
+            const midBC_x = (bx + cx) / 2 + 10;
+            const midBC_y = (by + cy) / 2;
+            const midCA_x = (cx + ax) / 2 - 15;
+            const midCA_y = (cy + ay) / 2;
+            
+            const traces = [
+                // 三角形
+                {
+                    x: triangleX,
+                    y: triangleY,
+                    mode: 'lines',
+                    name: '三角形ABC',
+                    line: { color: '#00d4ff', width: 3 },
+                    fill: 'toself',
+                    fillcolor: 'rgba(0, 212, 255, 0.1)'
+                },
+                // 外接圆
+                {
+                    x: circleX,
+                    y: circleY,
+                    mode: 'lines',
+                    name: '外接圆',
+                    line: { color: '#7c3aed', width: 2, dash: 'dash' }
+                },
+                // 顶点
+                {
+                    x: pointsX,
+                    y: pointsY,
+                    mode: 'markers+text',
+                    name: '顶点',
+                    marker: { size: 15, color: '#ff6b6b' },
+                    text: labels,
+                    textposition: 'top center',
+                    textfont: { size: 16, color: isDarkTheme ? '#fff' : '#333' }
+                },
+                // 边长标注 - a (BC)
+                {
+                    x: [midBC_x],
+                    y: [midBC_y],
+                    mode: 'text',
+                    text: ['a'],
+                    textfont: { size: 18, color: '#00d4ff' }
+                },
+                // 边长标注 - b (AC)
+                {
+                    x: [midCA_x],
+                    y: [midCA_y],
+                    mode: 'text',
+                    text: ['b'],
+                    textfont: { size: 18, color: '#00d4ff' }
+                },
+                // 边长标注 - c (AB)
+                {
+                    x: [midAB_x],
+                    y: [midAB_y],
+                    mode: 'text',
+                    text: ['c'],
+                    textfont: { size: 18, color: '#00d4ff' }
+                },
+                // 角度标注 A
+                {
+                    x: [30],
+                    y: [30],
+                    mode: 'text',
+                    text: [`∠A=${angleA}°`],
+                    textfont: { size: 14, color: '#ffd93d' }
+                },
+                // 角度标注 B
+                {
+                    x: [bx + 20],
+                    y: [10],
+                    mode: 'text',
+                    text: [`∠B=${angleB}°`],
+                    textfont: { size: 14, color: '#ffd93d' }
+                },
+                // 角度标注 C
+                {
+                    x: [cx - 20],
+                    y: [cy + 20],
+                    mode: 'text',
+                    text: [`∠C=${angleC.toFixed(0)}°`],
+                    textfont: { size: 14, color: '#ffd93d' }
+                },
+                // 外心 O
+                {
+                    x: [cx_center],
+                    y: [cy_center],
+                    mode: 'markers+text',
+                    text: ['O'],
+                    marker: { size: 10, color: '#7c3aed', symbol: 'diamond' },
+                    textposition: 'bottom right',
+                    textfont: { size: 14, color: '#7c3aed' }
+                }
+            ];
+            
+            const layout = {
+                showlegend: false,
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                xaxis: {
+                    showgrid: true,
+                    gridcolor: 'rgba(255,255,255,0.1)',
+                    zeroline: false,
+                    range: [-50, Math.max(bx, cx) + 100],
+                    title: 'x'
+                },
+                yaxis: {
+                    showgrid: true,
+                    gridcolor: 'rgba(255,255,255,0.1)',
+                    zeroline: false,
+                    range: [-50, Math.max(cy, R) + 50],
+                    scaleanchor: 'x',
+                    scaleratio: 1,
+                    title: 'y'
+                },
+                margin: { l: 50, r: 50, t: 50, b: 50 },
+                annotations: [{
+                    text: `<b>R = ${R}</b>`,
+                    showarrow: true,
+                    arrowhead: 2,
+                    arrowsize: 1,
+                    arrowwidth: 2,
+                    arrowcolor: '#7c3aed',
+                    ax: cx_center - 50,
+                    ay: cy_center + 30,
+                    axref: 'x',
+                    ayref: 'y',
+                    xref: 'x',
+                    yref: 'y',
+                    x: cx_center + R/2,
+                    y: cy_center + R/2,
+                    font: { size: 16, color: '#7c3aed' }
+                }]
+            };
+            
+            if (!isDarkTheme) {
+                layout.xaxis.gridcolor = 'rgba(0,0,0,0.1)';
+                layout.yaxis.gridcolor = 'rgba(0,0,0,0.1)';
+            }
+            
+            Plotly.react('plot', traces, layout, {displayModeBar: false});
+        }
+        
+        // 事件监听
+        ['angleA', 'angleB', 'radiusR'].forEach(id => {
+            document.getElementById(id).addEventListener('input', updatePlot);
+        });
+        
+        // 初始化
+        updatePlot();
+    </script>
+</body>
+</html>

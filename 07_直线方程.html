@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>直线方程 - 高中数学公式可视化</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: "PingFang SC", "Microsoft YaHei", "SimHei", sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh; color: #fff; transition: all 0.3s ease;
+        }
+        body.light-theme { background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); color: #333; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        header { text-align: center; padding: 20px 0; }
+        h1 { font-size: 2.2em; margin-bottom: 10px; background: linear-gradient(90deg, #00b894, #00cec9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .formula-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; margin: 15px 0; }
+        .formula-box {
+            background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
+            border-radius: 12px; padding: 15px 25px; border: 1px solid rgba(255,255,255,0.2);
+        }
+        body.light-theme .formula-box { background: rgba(255,255,255,0.8); border: 1px solid rgba(0,0,0,0.1); }
+        .formula { font-size: 1.6em; color: #00b894; font-family: "Times New Roman", serif; }
+        .formula.general { color: #0984e3; }
+        .theme-toggle {
+            position: fixed; top: 20px; right: 20px; padding: 10px 20px;
+            border: none; border-radius: 25px; background: rgba(255,255,255,0.2);
+            color: #fff; cursor: pointer; transition: all 0.3s;
+        }
+        body.light-theme .theme-toggle { background: rgba(0,0,0,0.1); color: #333; }
+        .main-content { display: grid; grid-template-columns: 1fr 350px; gap: 30px; margin-top: 20px; }
+        #plot { background: rgba(255,255,255,0.05); border-radius: 15px; min-height: 600px; }
+        body.light-theme #plot { background: rgba(255,255,255,0.9); }
+        .control-panel {
+            background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
+            border-radius: 15px; padding: 25px; border: 1px solid rgba(255,255,255,0.2);
+        }
+        body.light-theme .control-panel { background: rgba(255,255,255,0.8); border: 1px solid rgba(0,0,0,0.1); }
+        .control-group { margin-bottom: 20px; }
+        .control-group label { display: block; margin-bottom: 8px; font-size: 1.1em; color: #00b894; }
+        input[type="range"] {
+            width: 100%; height: 8px; border-radius: 4px;
+            background: rgba(255,255,255,0.2); outline: none; -webkit-appearance: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 20px; height: 20px;
+            border-radius: 50%; background: #00b894; cursor: pointer;
+        }
+        .value-display { text-align: right; font-size: 1.2em; margin-top: 5px; color: #fff; }
+        body.light-theme .value-display { color: #333; }
+        .equation-display {
+            background: rgba(0,184,148,0.1); border-radius: 10px; padding: 20px; margin-top: 20px; text-align: center;
+        }
+        body.light-theme .equation-display { background: rgba(0,184,148,0.2); }
+        .equation-display .eq { font-size: 1.5em; color: #00b894; font-family: "Times New Roman", serif; }
+        .equation-display .eq.general { color: #0984e3; }
+        .point-info { background: rgba(255,255,255,0.05); border-radius: 10px; padding: 15px; margin-top: 15px; }
+        body.light-theme .point-info { background: rgba(255,255,255,0.8); }
+        .hint { background: rgba(255,193,7,0.2); border-radius: 10px; padding: 15px; margin-top: 15px; font-size: 0.95em; line-height: 1.6; }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" onclick="toggleTheme()">🌙 深色/浅色</button>
+    <div class="container">
+        <header>
+            <h1>📏 直线方程</h1>
+            <div class="formula-container">
+                <div class="formula-box">
+                    <div class="formula">点斜式: y-y₁ = k(x-x₁)</div>
+                </div>
+                <div class="formula-box">
+                    <div class="formula general">一般式: Ax+By+C=0</div>
+                </div>
+            </div>
+        </header>
+        
+        <div class="main-content">
+            <div id="plot"></div>
+            <div class="control-panel">
+                <h2 style="margin-bottom: 20px; color: #00b894;">🎛️ 参数控制</h2>
+                <div class="control-group">
+                    <label>斜率 k</label>
+                    <input type="range" id="k" min="-3" max="3" step="0.1" value="1">
+                    <div class="value-display" id="k-value">1</div>
+                </div>
+                <div class="control-group">
+                    <label>点 x₁</label>
+                    <input type="range" id="x1" min="-5" max="5" value="-1">
+                    <div class="value-display" id="x1-value">-1</div>
+                </div>
+                <div class="control-group">
+                    <label>点 y₁</label>
+                    <input type="range" id="y1" min="-5" max="5" value="1">
+                    <div class="value-display" id="y1-value">1</div>
+                </div>
+                
+                <div class="equation-display">
+                    <div class="eq" id="eq1">y - 1 = 1.0(x + 1)</div>
+                    <div style="margin-top: 10px; color: #888;">即</div>
+                    <div class="eq general" id="eq2">y = 1.0x + 2.0</div>
+                    <div class="eq general" id="eq3" style="margin-top: 10px;">1.0x - 1.0y + 2.0 = 0</div>
+                </div>
+                
+                <div class="point-info">
+                    <div style="color: #00cec9; margin-bottom: 10px;">📍 定点 (x₁, y₁)</div>
+                    <div>当 x = <span id="checkX">0</span> 时</div>
+                    <div>y = <span id="checkY">--</span></div>
+                </div>
+                
+                <div class="hint">
+                    💡 提示：斜率k表示直线的倾斜程度。k>0上升，k<0下降，k=0水平。|k|越大，直线越陡峭。
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let isDarkTheme = true;
+        function toggleTheme() {
+            isDarkTheme = !isDarkTheme;
+            document.body.classList.toggle('light-theme');
+            updatePlot();
+        }
+        
+        function updatePlot() {
+            const k = parseFloat(document.getElementById('k').value);
+            const x1 = parseFloat(document.getElementById('x1').value);
+            const y1 = parseFloat(document.getElementById('y1').value);
+            
+            document.getElementById('k-value').textContent = k.toFixed(1);
+            document.getElementById('x1-value').textContent = x1;
+            document.getElementById('y1-value').textContent = y1;
+            
+            // 更新方程显示
+            const x1Sign = x1 >= 0 ? '+' : '';
+            const y1Sign = y1 >= 0 ? '-' : '+';
+            const absY1 = Math.abs(y1);
+            document.getElementById('eq1').textContent = `y ${y1Sign} ${absY1} = ${k.toFixed(1)}(x ${x1Sign} ${Math.abs(x1)})`;
+            
+            // y = kx + b, 其中 b = y1 - k*x1
+            const b = y1 - k * x1;
+            document.getElementById('eq2').textContent = `y = ${k.toFixed(1)}x ${b >= 0 ? '+' : '-'} ${Math.abs(b).toFixed(1)}`;
+            
+            // 一般式 Ax + By + C = 0
+            const A = k.toFixed(1);
+            const B = -1;
+            const C = b;
+            const cSign = C >= 0 ? '+' : '-';
+            document.getElementById('eq3').textContent = `${A}x ${B >= 0 ? '+' : '-'} ${Math.abs(B).toFixed(0)}y ${cSign} ${Math.abs(C).toFixed(1)} = 0`;
+            
+            // 验证点
+            const checkX = 0;
+            const checkY = k * checkX + b;
+            document.getElementById('checkX').textContent = checkX;
+            document.getElementById('checkY').textContent = checkY.toFixed(1);
+            
+            // 生成直线数据
+            const xRange = [-8, 8];
+            const yRange = [k * xRange[0] + b, k * xRange[1] + b];
+            
+            // 限制y在可视范围内
+            const yMin = -8, yMax = 8;
+            const x1_line = (yMin - b) / k;
+            const x2_line = (yMax - b) / k;
+            
+            const lineX = [x1_line, x2_line];
+            const lineY = [yMin, yMax];
+            
+            // 切线（用于显示斜率）
+            const tanLen = 1.5;
+            const tanX = [x1 - tanLen, x1 + tanLen];
+            const tanY = [y1 - k*tanLen, y1 + k*tanLen];
+            
+            // 水平参考线
+            const refX = [x1 - 2, x1 + 2];
+            const refY_horiz = [y1, y1];
+            const refX_vert = [x1, x1];
+            const refY_vert = [y1 - 2, y1 + 2];
+            
+            const traces = [
+                // 坐标轴
+                {
+                    x: [-8, 8], y: [0, 0],
+                    mode: 'lines', name: 'x轴',
+                    line: { color: 'rgba(255,255,255,0.4)', width: 2 }
+                },
+                {
+                    x: [0, 0], y: [-8, 8],
+                    mode: 'lines', name: 'y轴',
+                    line: { color: 'rgba(255,255,255,0.4)', width: 2 }
+                },
+                // 主直线
+                {
+                    x: lineX, y: lineY,
+                    mode: 'lines', name: '直线',
+                    line: { color: '#00b894', width: 4 }
+                },
+                // 定点
+                {
+                    x: [x1], y: [y1],
+                    mode: 'markers',
+                    marker: { size: 15, color: '#ff6b6b', symbol: 'circle' },
+                    name: '定点'
+                },
+                // 定点标注
+                {
+                    x: [x1 + 0.3], y: [y1 + 0.3],
+                    mode: 'text', text: [`(${x1}, ${y1})`],
+                    textfont: { size: 14, color: '#ff6b6b' }
+                },
+                // 斜率三角形 - 水平边
+                {
+                    x: [x1, x1 + 1], y: [y1, y1],
+                    mode: 'lines', name: 'Δx',
+                    line: { color: '#0984e3', width: 2, dash: 'dot' }
+                },
+                // 斜率三角形 - 垂直边
+                {
+                    x: [x1 + 1, x1 + 1], y: [y1, y1 + k],
+                    mode: 'lines', name: 'Δy',
+                    line: { color: '#e17055', width: 2, dash: 'dot' }
+                },
+                // 斜率标注
+                {
+                    x: [x1 + 1.2], y: [y1 + k/2],
+                    mode: 'text', text: [`Δy=${k.toFixed(1)}`],
+                    textfont: { size: 12, color: '#e17055' }
+                },
+                {
+                    x: [x1 + 0.5], y: [y1 - 0.4],
+                    mode: 'text', text: ['Δx=1'],
+                    textfont: { size: 12, color: '#0984e3' }
+                },
+                // k值标注
+                {
+                    x: [0.5], y: [6.5],
+                    mode: 'text', text: [`k = ${k.toFixed(2)}`],
+                    textfont: { size: 20, color: '#00b894', bold: true }
+                },
+                // 与y轴交点
+                {
+                    x: [0], y: [b],
+                    mode: 'markers',
+                    marker: { size: 10, color: '#fdcb6e', symbol: 'diamond' },
+                    name: '截距'
+                },
+                {
+                    x: [0.3], y: [b + 0.3],
+                    mode: 'text', text: [`b=${b.toFixed(1)}`],
+                    textfont: { size: 12, color: '#fdcb6e' }
+                }
+            ];
+            
+            const layout = {
+                showlegend: false,
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                xaxis: {
+                    showgrid: true,
+                    gridcolor: 'rgba(255,255,255,0.1)',
+                    zeroline: false,
+                    range: [-8, 8],
+                    scaleanchor: 'y',
+                    scaleratio: 1
+                },
+                yaxis: {
+                    showgrid: true,
+                    gridcolor: 'rgba(255,255,255,0.1)',
+                    zeroline: false,
+                    range: [-8, 8]
+                },
+                margin: { l: 50, r: 50, t: 50, b: 50 }
+            };
+            
+            if (!isDarkTheme) {
+                layout.xaxis.gridcolor = 'rgba(0,0,0,0.1)';
+                layout.yaxis.gridcolor = 'rgba(0,0,0,0.1)';
+            }
+            
+            Plotly.react('plot', traces, layout, {displayModeBar: false});
+        }
+        
+        ['k', 'x1', 'y1'].forEach(id => {
+            document.getElementById(id).addEventListener('input', updatePlot);
+        });
+        updatePlot();
+    </script>
+</body>
+</html>

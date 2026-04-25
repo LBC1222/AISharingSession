@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>两角和差公式 - 高中数学公式可视化</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: "PingFang SC", "Microsoft YaHei", "SimHei", sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh; color: #fff; transition: all 0.3s ease;
+        }
+        body.light-theme { background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); color: #333; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        header { text-align: center; padding: 20px 0; }
+        h1 { font-size: 2.2em; margin-bottom: 10px; background: linear-gradient(90deg, #a29bfe, #74b9ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .formula-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; margin: 15px 0; }
+        .formula-box {
+            background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
+            border-radius: 12px; padding: 15px 25px; border: 1px solid rgba(255,255,255,0.2);
+        }
+        body.light-theme .formula-box { background: rgba(255,255,255,0.8); border: 1px solid rgba(0,0,0,0.1); }
+        .formula { font-size: 1.5em; color: #a29bfe; font-family: "Times New Roman", serif; }
+        .formula.sin { color: #ff7675; }
+        .formula.cos { color: #74b9ff; }
+        .theme-toggle {
+            position: fixed; top: 20px; right: 20px; padding: 10px 20px;
+            border: none; border-radius: 25px; background: rgba(255,255,255,0.2);
+            color: #fff; cursor: pointer; transition: all 0.3s;
+        }
+        body.light-theme .theme-toggle { background: rgba(0,0,0,0.1); color: #333; }
+        .main-content { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 20px; }
+        .plot-container { background: rgba(255,255,255,0.05); border-radius: 15px; min-height: 500px; }
+        body.light-theme .plot-container { background: rgba(255,255,255,0.9); }
+        .plot-title { text-align: center; padding: 15px; font-size: 1.3em; color: #a29bfe; }
+        .control-panel {
+            grid-column: 1 / -1; background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
+            border-radius: 15px; padding: 25px; border: 1px solid rgba(255,255,255,0.2);
+            display: flex; flex-wrap: wrap; gap: 30px; justify-content: center;
+        }
+        body.light-theme .control-panel { background: rgba(255,255,255,0.8); border: 1px solid rgba(0,0,0,0.1); }
+        .control-group { min-width: 200px; }
+        .control-group label { display: block; margin-bottom: 10px; font-size: 1.1em; color: #a29bfe; }
+        input[type="range"] {
+            width: 100%; height: 8px; border-radius: 4px;
+            background: rgba(255,255,255,0.2); outline: none; -webkit-appearance: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 20px; height: 20px;
+            border-radius: 50%; background: #a29bfe; cursor: pointer;
+        }
+        .value-display { text-align: center; font-size: 1.3em; margin-top: 8px; color: #fff; }
+        body.light-theme .value-display { color: #333; }
+        .result-box {
+            grid-column: 1 / -1; display: flex; flex-wrap: wrap; justify-content: center; gap: 30px;
+            background: rgba(162,155,254,0.1); border-radius: 15px; padding: 25px; margin-top: 10px;
+        }
+        body.light-theme .result-box { background: rgba(162,155,254,0.2); }
+        .result-item {
+            background: rgba(255,255,255,0.1); border-radius: 10px; padding: 20px; min-width: 280px; text-align: center;
+        }
+        body.light-theme .result-item { background: rgba(255,255,255,0.8); }
+        .result-item h3 { margin-bottom: 10px; font-size: 1.2em; }
+        .result-item.sin h3 { color: #ff7675; }
+        .result-item.cos h3 { color: #74b9ff; }
+        .result-value { font-size: 1.4em; font-weight: bold; color: #fff; font-family: "Times New Roman", serif; }
+        body.light-theme .result-value { color: #333; }
+        .hint { grid-column: 1 / -1; background: rgba(255,193,7,0.2); border-radius: 10px; padding: 15px; font-size: 0.95em; line-height: 1.6; text-align: center; }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" onclick="toggleTheme()">🌙 深色/浅色</button>
+    <div class="container">
+        <header>
+            <h1>🔄 两角和差公式</h1>
+            <div class="formula-container">
+                <div class="formula-box">
+                    <div class="formula sin">sin(α±β) = sinα·cosβ ± cosα·sinβ</div>
+                </div>
+                <div class="formula-box">
+                    <div class="formula cos">cos(α±β) = cosα·cosβ ∓ sinα·sinβ</div>
+                </div>
+            </div>
+        </header>
+        
+        <div class="main-content">
+            <div class="control-panel">
+                <div class="control-group">
+                    <label>α 角度 (°)</label>
+                    <input type="range" id="alpha" min="0" max="180" value="40">
+                    <div class="value-display" id="alpha-value">40°</div>
+                </div>
+                <div class="control-group">
+                    <label>β 角度 (°)</label>
+                    <input type="range" id="beta" min="0" max="180" value="25">
+                    <div class="value-display" id="beta-value">25°</div>
+                </div>
+                <div class="control-group">
+                    <label>
+                        <input type="checkbox" id="useMinus" onchange="updatePlots()"> 使用减法 (α-β)
+                    </label>
+                </div>
+            </div>
+            
+            <div class="plot-container">
+                <div class="plot-title">📐 正弦和差公式可视化</div>
+                <div id="sinPlot"></div>
+            </div>
+            
+            <div class="plot-container">
+                <div class="plot-title">📐 余弦和差公式可视化</div>
+                <div id="cosPlot"></div>
+            </div>
+            
+            <div class="result-box">
+                <div class="result-item sin">
+                    <h3>sin(α + β) 或 sin(α - β)</h3>
+                    <div class="result-value" id="sinResult">--</div>
+                </div>
+                <div class="result-item cos">
+                    <h3>cos(α + β) 或 cos(α - β)</h3>
+                    <div class="result-value" id="cosResult">--</div>
+                </div>
+                <div class="result-item">
+                    <h3>验证：sin² + cos²</h3>
+                    <div class="result-value" id="verify">--</div>
+                </div>
+            </div>
+            
+            <div class="hint">
+                💡 提示：观察单位圆上旋转向量的合成。sin和cos的"交叉相乘"揭示了角度叠加时的几何规律。
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let isDarkTheme = true;
+        function toggleTheme() {
+            isDarkTheme = !isDarkTheme;
+            document.body.classList.toggle('light-theme');
+            updatePlots();
+        }
+        function degToRad(d) { return d * Math.PI / 180; }
+        
+        function updatePlots() {
+            let alpha = parseFloat(document.getElementById('alpha').value);
+            let beta = parseFloat(document.getElementById('beta').value);
+            const useMinus = document.getElementById('useMinus').checked;
+            
+            const sign = useMinus ? -1 : 1;
+            
+            document.getElementById('alpha-value').textContent = alpha + '°';
+            document.getElementById('beta-value').textContent = beta + '°';
+            
+            const alphaRad = degToRad(alpha);
+            const betaRad = degToRad(beta);
+            const sumRad = degToRad(alpha + sign * beta);
+            
+            // 计算公式值
+            const sinSum = Math.sin(alphaRad) * Math.cos(betaRad) + sign * Math.cos(alphaRad) * Math.sin(betaRad);
+            const cosSum = Math.cos(alphaRad) * Math.cos(betaRad) - sign * Math.sin(alphaRad) * Math.sin(betaRad);
+            
+            // 更新结果显示
+            const opText = useMinus ? '-' : '+';
+            document.getElementById('sinResult').textContent = `sin(${alpha}° ${opText} ${beta}°) = ${sinSum.toFixed(4)}`;
+            document.getElementById('cosResult').textContent = `cos(${alpha}° ${opText} ${beta}°) = ${cosSum.toFixed(4)}`;
+            document.getElementById('verify').textContent = (sinSum*sinSum + cosSum*cosSum).toFixed(6);
+            document.getElementById('verify').style.color = Math.abs(sinSum*sinSum + cosSum*cosSum - 1) < 0.0001 ? '#1dd1a1' : '#ff6b6b';
+            
+            // ========== 正弦和差图 ==========
+            const unit = 3;
+            const traces1 = [
+                // 单位圆
+                {
+                    x: [Math.cos(t) for t in Array.from({length: 101}, (_, i) => 2*Math.PI*i/100)],
+                    y: [Math.sin(t) for t in Array.from({length: 101}, (_, i) => 2*Math.PI*i/100)],
+                    mode: 'lines', name: '单位圆', line: { color: '#636e72', width: 2 }
+                },
+                // α 向量
+                {
+                    x: [0, unit * Math.cos(alphaRad)], y: [0, unit * Math.sin(alphaRad)],
+                    mode: 'lines+markers', name: 'α向量',
+                    line: { color: '#ff7675', width: 4 },
+                    marker: { size: 10 }
+                },
+                // β 向量
+                {
+                    x: [0, unit * Math.cos(betaRad)], y: [0, unit * Math.sin(betaRad)],
+                    mode: 'lines+markers', name: 'β向量',
+                    line: { color: '#74b9ff', width: 4 },
+                    marker: { size: 10 }
+                },
+                // 和向量
+                {
+                    x: [0, unit * Math.cos(sumRad)], y: [0, unit * Math.sin(sumRad)],
+                    mode: 'lines+markers', name: '和向量',
+                    line: { color: '#a29bfe', width: 5 },
+                    marker: { size: 12 }
+                },
+                // sinα 向量（垂直分量）
+                {
+                    x: [0, unit * Math.cos(alphaRad)], y: [0, unit * Math.sin(alphaRad)],
+                    mode: 'lines', name: 'sinα',
+                    line: { color: '#ff7675', width: 2, dash: 'dot' }
+                },
+                // sinβ 向量
+                {
+                    x: [unit * Math.cos(alphaRad), unit * Math.cos(sumRad)],
+                    y: [unit * Math.sin(alphaRad), unit * Math.sin(sumRad)],
+                    mode: 'lines', name: 'cosα·sinβ',
+                    line: { color: '#fdcb6e', width: 2, dash: 'dot' }
+                },
+                // 角度标注
+                {
+                    x: [0.4], y: [0.2],
+                    mode: 'text', text: [`α=${alpha}°`],
+                    textfont: { size: 14, color: '#ff7675' }
+                },
+                {
+                    x: [0.3], y: [0.4],
+                    mode: 'text', text: [`β=${beta}°`],
+                    textfont: { size: 14, color: '#74b9ff' }
+                },
+                {
+                    x: [0.5], y: [0.6],
+                    mode: 'text', text: [`α${opText}β=${(alpha+sign*beta).toFixed(0)}°`],
+                    textfont: { size: 14, color: '#a29bfe' }
+                },
+                // 坐标轴
+                {
+                    x: [-4, 4], y: [0, 0],
+                    mode: 'lines', name: 'x轴',
+                    line: { color: 'rgba(255,255,255,0.3)', width: 1 }
+                },
+                {
+                    x: [0, 0], y: [-4, 4],
+                    mode: 'lines', name: 'y轴',
+                    line: { color: 'rgba(255,255,255,0.3)', width: 1 }
+                }
+            ];
+            
+            const layout1 = {
+                showlegend: false,
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                xaxis: { showgrid: false, zeroline: false, range: [-4, 4], scaleanchor: 'y', scaleratio: 1 },
+                yaxis: { showgrid: false, zeroline: false, range: [-4, 4] },
+                margin: { l: 50, r: 50, t: 30, b: 50 }
+            };
+            
+            // ========== 余弦和差图 ==========
+            const traces2 = [
+                // 单位圆
+                {
+                    x: [Math.cos(t) for t in Array.from({length: 101}, (_, i) => 2*Math.PI*i/100)],
+                    y: [Math.sin(t) for t in Array.from({length: 101}, (_, i) => 2*Math.PI*i/100)],
+                    mode: 'lines', name: '单位圆', line: { color: '#636e72', width: 2 }
+                },
+                // cosα 向量（水平分量）
+                {
+                    x: [0, unit * Math.cos(alphaRad)], y: [0, 0],
+                    mode: 'lines+markers', name: 'cosα',
+                    line: { color: '#74b9ff', width: 4 },
+                    marker: { size: 10 }
+                },
+                // cosβ 向量
+                {
+                    x: [0, unit * Math.cos(betaRad)], y: [0, 0],
+                    mode: 'lines+markers', name: 'cosβ',
+                    line: { color: '#55efc4', width: 4 },
+                    marker: { size: 10 }
+                },
+                // cos和向量
+                {
+                    x: [0, unit * Math.cos(sumRad)], y: [0, 0],
+                    mode: 'lines+markers', name: 'cos和',
+                    line: { color: '#0984e3', width: 5 },
+                    marker: { size: 12 }
+                },
+                // cosα·cosβ
+                {
+                    x: [0, unit * Math.cos(sumRad)],
+                    y: [0, 0],
+                    mode: 'lines', name: 'cosα·cosβ',
+                    line: { color: '#74b9ff', width: 3 }
+                },
+                // -sinα·sinβ 修正项
+                {
+                    x: [unit * Math.cos(sumRad), unit * Math.cos(alphaRad)],
+                    y: [0, 0],
+                    mode: 'lines', name: 'sinα·sinβ',
+                    line: { color: '#ff7675', width: 2, dash: 'dash' }
+                },
+                // 角度标注
+                {
+                    x: [0.4], y: [0.2],
+                    mode: 'text', text: [`α=${alpha}°`],
+                    textfont: { size: 14, color: '#74b9ff' }
+                },
+                {
+                    x: [0.3], y: [-0.3],
+                    mode: 'text', text: [`β=${beta}°`],
+                    textfont: { size: 14, color: '#55efc4' }
+                },
+                {
+                    x: [0.5], y: [0.4],
+                    mode: 'text', text: [`cos(α${opText}β)`],
+                    textfont: { size: 14, color: '#0984e3' }
+                },
+                // 坐标轴
+                {
+                    x: [-4, 4], y: [0, 0],
+                    mode: 'lines', name: 'x轴',
+                    line: { color: 'rgba(255,255,255,0.3)', width: 1 }
+                },
+                {
+                    x: [0, 0], y: [-4, 4],
+                    mode: 'lines', name: 'y轴',
+                    line: { color: 'rgba(255,255,255,0.3)', width: 1 }
+                }
+            ];
+            
+            const layout2 = {
+                showlegend: false,
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                xaxis: { showgrid: false, zeroline: false, range: [-4, 4], scaleanchor: 'y', scaleratio: 1 },
+                yaxis: { showgrid: false, zeroline: false, range: [-4, 4] },
+                margin: { l: 50, r: 50, t: 30, b: 50 }
+            };
+            
+            if (!isDarkTheme) {
+                layout1.xaxis.gridcolor = 'rgba(0,0,0,0.1)';
+                layout1.yaxis.gridcolor = 'rgba(0,0,0,0.1)';
+                layout2.xaxis.gridcolor = 'rgba(0,0,0,0.1)';
+                layout2.yaxis.gridcolor = 'rgba(0,0,0,0.1)';
+            }
+            
+            Plotly.react('sinPlot', traces1, layout1, {displayModeBar: false});
+            Plotly.react('cosPlot', traces2, layout2, {displayModeBar: false});
+        }
+        
+        document.getElementById('alpha').addEventListener('input', updatePlots);
+        document.getElementById('beta').addEventListener('input', updatePlots);
+        updatePlots();
+    </script>
+</body>
+</html>

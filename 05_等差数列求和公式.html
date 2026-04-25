@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>等差数列求和公式 - 高中数学公式可视化</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: "PingFang SC", "Microsoft YaHei", "SimHei", sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh; color: #fff; transition: all 0.3s ease;
+        }
+        body.light-theme { background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); color: #333; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        header { text-align: center; padding: 20px 0; }
+        h1 { font-size: 2.2em; margin-bottom: 10px; background: linear-gradient(90deg, #00cec9, #0984e3); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .formula-box {
+            background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
+            border-radius: 15px; padding: 20px 30px; margin: 20px auto;
+            display: inline-block; border: 1px solid rgba(255,255,255,0.2);
+        }
+        body.light-theme .formula-box { background: rgba(255,255,255,0.8); border: 1px solid rgba(0,0,0,0.1); }
+        .formula { font-size: 1.8em; color: #00cec9; font-family: "Times New Roman", serif; }
+        .theme-toggle {
+            position: fixed; top: 20px; right: 20px; padding: 10px 20px;
+            border: none; border-radius: 25px; background: rgba(255,255,255,0.2);
+            color: #fff; cursor: pointer; transition: all 0.3s;
+        }
+        body.light-theme .theme-toggle { background: rgba(0,0,0,0.1); color: #333; }
+        .main-content { display: grid; grid-template-columns: 1fr 400px; gap: 30px; margin-top: 20px; }
+        #plot { background: rgba(255,255,255,0.05); border-radius: 15px; min-height: 600px; }
+        body.light-theme #plot { background: rgba(255,255,255,0.9); }
+        .control-panel {
+            background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
+            border-radius: 15px; padding: 25px; border: 1px solid rgba(255,255,255,0.2);
+        }
+        body.light-theme .control-panel { background: rgba(255,255,255,0.8); border: 1px solid rgba(0,0,0,0.1); }
+        .control-group { margin-bottom: 20px; }
+        .control-group label { display: block; margin-bottom: 8px; font-size: 1.1em; color: #00cec9; }
+        input[type="range"] {
+            width: 100%; height: 8px; border-radius: 4px;
+            background: rgba(255,255,255,0.2); outline: none; -webkit-appearance: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 20px; height: 20px;
+            border-radius: 50%; background: #00cec9; cursor: pointer;
+        }
+        .value-display { text-align: right; font-size: 1.2em; margin-top: 5px; color: #fff; }
+        body.light-theme .value-display { color: #333; }
+        .result-panel {
+            background: rgba(0,206,201,0.1); border-radius: 10px; padding: 20px; margin-top: 20px;
+        }
+        body.light-theme .result-panel { background: rgba(0,206,201,0.2); }
+        .result-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .result-value { color: #00cec9; font-weight: bold; font-size: 1.2em; }
+        .hint { background: rgba(255,193,7,0.2); border-radius: 10px; padding: 15px; margin-top: 20px; font-size: 0.95em; line-height: 1.6; }
+        .series-display { background: rgba(255,255,255,0.05); border-radius: 10px; padding: 15px; margin-top: 15px; font-family: monospace; font-size: 1.1em; }
+        body.light-theme .series-display { background: rgba(255,255,255,0.8); color: #333; }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" onclick="toggleTheme()">🌙 深色/浅色</button>
+    <div class="container">
+        <header>
+            <h1>📊 等差数列求和公式</h1>
+            <div class="formula-box">
+                <div class="formula">Sn = n(a₁+an)/2 = n·a₁ + n(n-1)d/2</div>
+            </div>
+        </header>
+        
+        <div class="main-content">
+            <div id="plot"></div>
+            <div class="control-panel">
+                <h2 style="margin-bottom: 20px; color: #00cec9;">🎛️ 参数控制</h2>
+                <div class="control-group">
+                    <label>首项 a₁</label>
+                    <input type="range" id="a1" min="1" max="10" value="1">
+                    <div class="value-display" id="a1-value">1</div>
+                </div>
+                <div class="control-group">
+                    <label>公差 d</label>
+                    <input type="range" id="d" min="1" max="5" value="2">
+                    <div class="value-display" id="d-value">2</div>
+                </div>
+                <div class="control-group">
+                    <label>项数 n</label>
+                    <input type="range" id="n" min="2" max="15" value="6">
+                    <div class="value-display" id="n-value">6</div>
+                </div>
+                
+                <div class="result-panel">
+                    <h3 style="margin-bottom: 15px; color: #00cec9;">📊 计算结果</h3>
+                    <div class="result-item"><span>末项 an =</span><span class="result-value" id="an">--</span></div>
+                    <div class="result-item"><span>a₁ + an =</span><span class="result-value" id="sumEnd">--</span></div>
+                    <div class="result-item"><span>Sn = n(a₁+an)/2 =</span><span class="result-value" id="sn1">--</span></div>
+                    <div class="result-item"><span>Sn = na₁ + n(n-1)d/2 =</span><span class="result-value" id="sn2">--</span></div>
+                </div>
+                
+                <div class="series-display">
+                    <div style="margin-bottom: 10px; color: #00cec9;">📝 等差数列：</div>
+                    <div id="seriesOutput">--</div>
+                </div>
+                
+                <div class="hint">
+                    💡 提示：等差数列的首尾配对求和是相等的。通过调整n观察"倒序相加"法的几何直观：图形被分割为n个等高的矩形。
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let isDarkTheme = true;
+        function toggleTheme() {
+            isDarkTheme = !isDarkTheme;
+            document.body.classList.toggle('light-theme');
+            updatePlot();
+        }
+        
+        function generateArithmeticSeries(a1, d, n) {
+            const series = [];
+            for (let i = 0; i < n; i++) {
+                series.push(a1 + i * d);
+            }
+            return series;
+        }
+        
+        function updatePlot() {
+            const a1 = parseFloat(document.getElementById('a1').value);
+            const d = parseFloat(document.getElementById('d').value);
+            const n = parseFloat(document.getElementById('n').value);
+            
+            document.getElementById('a1-value').textContent = a1;
+            document.getElementById('d-value').textContent = d;
+            document.getElementById('n-value').textContent = n;
+            
+            // 生成等差数列
+            const series = generateArithmeticSeries(a1, d, n);
+            const an = series[n - 1];
+            
+            // 计算和
+            const sn1 = n * (a1 + an) / 2;
+            const sn2 = n * a1 + n * (n - 1) * d / 2;
+            
+            // 更新显示
+            document.getElementById('an').textContent = an;
+            document.getElementById('sumEnd').textContent = (a1 + an);
+            document.getElementById('sn1').textContent = sn1;
+            document.getElementById('sn2').textContent = sn2;
+            document.getElementById('seriesOutput').innerHTML = series.join(', ');
+            
+            // 构建柱状图数据
+            const x = series.map((_, i) => `a${i+1}`);
+            const y = series;
+            
+            // 添加配对标注
+            const annotations = [];
+            for (let i = 0; i < Math.floor(n / 2); i++) {
+                const j = n - 1 - i;
+                if (i < j) {
+                    annotations.push({
+                        x: `a${i+1}`, y: series[i],
+                        text: `+ ${series[j]}`,
+                        showarrow: true,
+                        arrowhead: 2,
+                        arrowsize: 0.5,
+                        arrowwidth: 1,
+                        arrowcolor: '#00cec9',
+                        ax: 0, ay: 30,
+                        font: { size: 14, color: '#00cec9' }
+                    });
+                }
+            }
+            
+            // 中间项（如果是奇数项）
+            if (n % 2 === 1) {
+                const midIndex = Math.floor(n / 2);
+                annotations.push({
+                    x: `a${midIndex+1}`, y: series[midIndex],
+                    text: `= ${a1 + an}`,
+                    showarrow: false,
+                    font: { size: 16, color: '#fdcb6e', bold: true }
+                });
+            }
+            
+            // 配对和标注
+            annotations.push({
+                x: 0.5, y: Math.max(...series) * 0.9,
+                xref: 'paper', yref: 'paper',
+                text: `<b>首尾配对和：a₁ + an = ${a1} + ${an} = ${a1 + an}</b>`,
+                showarrow: false,
+                font: { size: 18, color: '#00cec9' }
+            });
+            
+            const trace = {
+                x: x,
+                y: y,
+                type: 'bar',
+                marker: {
+                    color: series.map((val, idx) => idx < n/2 ? '#00cec9' : (idx >= n/2 && n%2===1 ? '#fdcb6e' : '#0984e3')),
+                    line: { color: '#fff', width: 2 }
+                },
+                text: series.map((val, i) => `${val}<br>${i < Math.ceil(n/2) ? `+${series[n-1-i]}=${val+series[n-1-i]}` : ''}`),
+                textposition: 'inside',
+                textfont: { size: 12, color: '#fff' },
+                name: '等差数列'
+            };
+            
+            const layout = {
+                title: {
+                    text: `<b>等差数列 Sn = ${sn1}</b> (配对数: ${Math.floor(n/2)} ${n%2===1 ? ' + 中项' : ''})`,
+                    font: { size: 24, color: '#00cec9' }
+                },
+                showlegend: false,
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                xaxis: {
+                    title: '项',
+                    showgrid: false,
+                    gridcolor: 'rgba(255,255,255,0.1)',
+                    tickfont: { size: 14, color: isDarkTheme ? '#fff' : '#333' },
+                    titlefont: { size: 16, color: '#00cec9' }
+                },
+                yaxis: {
+                    title: '值',
+                    showgrid: true,
+                    gridcolor: 'rgba(255,255,255,0.1)',
+                    tickfont: { size: 14, color: isDarkTheme ? '#fff' : '#333' },
+                    titlefont: { size: 16, color: '#00cec9' }
+                },
+                margin: { l: 80, r: 50, t: 80, b: 80 },
+                annotations: annotations
+            };
+            
+            if (!isDarkTheme) {
+                layout.xaxis.gridcolor = 'rgba(0,0,0,0.1)';
+                layout.yaxis.gridcolor = 'rgba(0,0,0,0.1)';
+            }
+            
+            Plotly.react('plot', [trace], layout, {displayModeBar: false});
+        }
+        
+        ['a1', 'd', 'n'].forEach(id => {
+            document.getElementById(id).addEventListener('input', updatePlot);
+        });
+        updatePlot();
+    </script>
+</body>
+</html>

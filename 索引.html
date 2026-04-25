@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高中数学公式可视化 - 索引</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: "PingFang SC", "Microsoft YaHei", "SimHei", sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        header {
+            text-align: center;
+            padding: 40px 0;
+        }
+        h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+            background: linear-gradient(90deg, #00d4ff, #7c3aed, #ff6b6b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .subtitle {
+            font-size: 1.3em;
+            color: #888;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin-bottom: 50px;
+        }
+        .section-title {
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .section-title .icon {
+            font-size: 1.2em;
+        }
+        .formula-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .formula-card {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: #fff;
+            display: block;
+        }
+        .formula-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,212,255,0.2);
+            border-color: #00d4ff;
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+        .card-number {
+            background: linear-gradient(135deg, #00d4ff, #7c3aed);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        .card-type {
+            font-size: 0.85em;
+            padding: 5px 12px;
+            border-radius: 15px;
+            background: rgba(255,255,255,0.1);
+        }
+        .card-type.plot2d { background: rgba(0,206,201,0.2); color: #00cec9; }
+        .card-type.plot3d { background: rgba(162,155,254,0.2); color: #a29bfe; }
+        .card-title {
+            font-size: 1.4em;
+            margin-bottom: 10px;
+            color: #00d4ff;
+        }
+        .card-formula {
+            font-family: "Times New Roman", serif;
+            font-size: 1.1em;
+            color: #feca57;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            text-align: center;
+        }
+        .card-desc {
+            font-size: 0.95em;
+            color: #aaa;
+            line-height: 1.6;
+        }
+        .card-features {
+            margin-top: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .feature-tag {
+            font-size: 0.8em;
+            padding: 4px 10px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.05);
+            color: #888;
+        }
+        footer {
+            text-align: center;
+            padding: 40px 0;
+            color: #666;
+            font-size: 0.9em;
+        }
+        footer a {
+            color: #00d4ff;
+            text-decoration: none;
+        }
+        @media (max-width: 768px) {
+            h1 { font-size: 2em; }
+            .formula-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📚 高中数学公式可视化</h1>
+            <p class="subtitle">交互式动画 · 让公式动起来 · 深入理解数学本质</p>
+        </header>
+        
+        <!-- 第一部分：三角函数与解三角形 -->
+        <div class="section">
+            <h2 class="section-title">
+                <span class="icon">📐</span>
+                第一部分：三角函数与解三角形
+            </h2>
+            <div class="formula-grid">
+                <a href="01_正弦定理.html" class="formula-card">
+                    <div class="card-header">
+                        <span class="card-number">1</span>
+                        <span class="card-type plot2d">2D</span>
+                    </div>
+                    <div class="card-title">正弦定理</div>
+                    <div class="card-formula">a/sinA = b/sinB = c/sinC = 2R</div>
+                    <div class="card-desc">
+                        展示三角形ABC与外接圆的关系，通过拖动滑块改变角度，观察比例恒定不变。
+                    </div>
+                    <div class="card-features">
+                        <span class="feature-tag">参数滑块</span>
+                        <span class="feature-tag">实时计算</span>
+                        <span class="feature-tag">动态演示</span>
+                    </div>
+                </a>
+                
+                <a href="02_余弦定理.html" class="formula-card">
+                    <div class="card-header">
+                        <span class="card-number">2</span>
+                        <span class="card-type plot2d">2D</span>
+                    </div>
+                    <div class="card-title">余弦定理</div>
+                    <div class="card-formula">c² = a² + b² - 2ab·cosC</div>
+                    <div class="card-desc">
+                        展示三角形分解为直角三角形加余弦修正项的几何意义，调整角度观察第三边变化。
+                    </div>
+                    <div class="card-features">
+                        <span class="feature-tag">参数滑块</span>
+                        <span class="feature-tag">几何分解</span>
+                        <span class="feature-tag">公式验证</span>
+                    </div>
+                </a>
+                
+                <a href="03_两角和差公式.html" class="formula-card">
+                    <div class="card-header">
+                        <span class="card-number">3</span>
+                        <span class="card-type plot2d">2D</span>
+                    </div>
+                    <div class="card-title">两角和差公式</div>
+                    <div class="card-formula">sin(α±β) = sinα·cosβ ± cosα·sinβ<br>cos(α±β) = cosα·cosβ ∓ sinα·sinβ</div>
+                    <div class="card-desc">
+                        用单位圆上的旋转向量展示两角和差的正弦余弦，直观理解"交叉相乘"的几何规律。
+                    </div>
+                    <div class="card-features">
+                        <span class="feature-tag">单位圆</span>
+                        <span class="feature-tag">向量合成</span>
+                        <span class="feature-tag">sin/cos对比</span>
+                    </div>
+                </a>
+                
+                <a href="04_二倍角公式.html" class="formula-card">
+                    <div class="card-header">
+                        <span class="card-number">4</span>
+                        <span class="card-type plot2d">2D</span>
+                    </div>
+                    <div class="card-title">二倍角公式</div>
+                    <div class="card-formula">sin2α = 2sinα·cosα<br>cos2α = cos²α - sin²α</div>
+                    <div class="card-desc">
+                        用几何图形展示二倍角的面积关系，观察角度加倍时三角函数的倍增规律。
+                    </div>
+                    <div class="card-features">
+                        <span class="feature-tag">几何直观</span>
+                        <span class="feature-tag">面积关系</span>
+                        <span class="feature-tag">多公式对比</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+        
+        <!-- 第二部分：数列 -->
+        <div class="section">
+            <h2 class="section-title">
+                <span class="icon">📊</span>
+                第二部分：数列
+            </h2>
+            <div class="formula-grid">
+                <a href="05_等差数列求和公式.html" class="formula-card">
+                    <div class="card-header">
+                        <span class="card-number">5</span>
+                        <span class="card-type plot2d">2D</span>
+                    </div>
+                    <div class="card-title">等差数列求和公式</div>
+                    <div class="card-formula">Sn = n(a₁+an)/2 = n·a₁ + n(n-1)d/2</div>
+                    <div class="card-desc">
+                        展示等差数列的柱状图，用首尾配对的几何直观解释求和公式。
+                    </div>
+                    <div class="card-features">
+                        <span class="feature-tag">柱状图</span>
+                        <span class="feature-tag">配对求和</span>
+                        <span class="feature-tag">参数可调</span>
+                    </div>
+                </a>
+                
+                <a href="06_等比数列求和公式.html" class="formula-card">
+                    <div class="card-header">
+                        <span class="card-number">6</span>
+                        <span class="card-type plot2d">2D</span>
+                    </div>
+                    <div class="card-title">等比数列求和公式</div>
+                    <div class="card-formula">Sn = a₁(1-qⁿ)/(1-q) (q≠1)</div>
+                    <div class="card-desc">
+                        展示等比数列的增长过程，观察错位相减法的几何含义，以及|q|<1时的收敛特性。
+                    </div>
+                    <div class="card-features">
+                        <span class="feature-tag">增长曲线</span>
+                        <span class="feature-tag">收敛分析</span>
+                        <span class="feature-tag">累计和</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+        
+        <!-- 第三部分：解析几何 -->
+        <div class="section">
+            <h2 class="section-title">
+                <span class="icon">📏</span>
+                第三部分：解析几何
+            </h2>
+            <div class="formula-grid">
+                <a href="07_直线方程.html" class="formula-card">
+                    <div class="card-header">
+                        <span class="card-number">7</span>
+                        <span class="card-type plot2d">2D</span>
+                    </div>
+                    <div class="card-title">直线方程</div>
+                    <div class="card-formula">点斜式: y-y₁ = k(x-x₁)<br>一般式: Ax+By+C=0</div>
+                    <div class="card-desc">
+                        坐标系中展示直线与斜率k的关系，斜率三角形直观展示Δy/Δx的几何意义。
+                    </div>
+                    <div class="card-features">
+                        <span class="feature-tag">斜率三角形</span>
+                        <span class="feature-tag">截距显示</span>
+                        <span class="feature-tag">多形式切换</span>
+                    </div>
+                </a>
+                
+                <a href="08_椭圆标准方程.html" class="formula-card">
+                    <div class="card-header">
+                        <span class="card-number">8</span>
+                        <span class="card-type plot2d">2D</span>
+                    </div>
+                    <div class="card-title">椭圆标准方程</div>
+                    <div class="card-formula">x²/a² + y²/b² = 1 (a>b>0)</div>
+                    <div class="card-desc">
+                        展示椭圆的生成过程，参数a、b可调，观察焦点、离心率与形状的关系。
+                    </div>
+                    <div class="card-features">
+                        <span class="feature-tag">焦点显示</span>
+                        <span class="feature-tag">离心率</span>
+                        <span class="feature-tag">面积计算</span>
+                    </div>
+                </a>
+                
+                <a href="09_双曲线标准方程.html" class="formula-card">
+                    <div class="card-header">
+                        <span class="card-number">9</span>
+                        <span class="card-type plot2d">2D</span>
+                    </div>
+                    <div class="card-title">双曲线标准方程</div>
+                    <div class="card-formula">x²/a² - y²/b² = 1</div>
+                    <div class="card-desc">
+                        展示双曲线的两支及其渐近线，观察实轴、虚轴与离心率的关系。
+                    </div>
+                    <div class="card-features">
+                        <span class="feature-tag">渐近线</span>
+                        <span class="feature-tag">双支显示</span>
+                        <span class="feature-tag">离心率分析</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+        
+        <!-- 第四部分：导数与微分 -->
+        <div class="section">
+            <h2 class="section-title">
+                <span class="icon">📈</span>
+                第四部分：导数与微分
+            </h2>
+            <div class="formula-grid">
+                <a href="10_导数的定义.html" class="formula-card">
+                    <div class="card-header">
+                        <span class="card-number">10</span>
+                        <span class="card-type plot2d">2D</span>
+                    </div>
+                    <div class="card-title">导数的定义</div>
+                    <div class="card-formula">f'(x) = lim(Δx→0) [f(x+Δx) - f(x)]/Δx</div>
+                    <div class="card-desc">
+                        动画展示割线逼近切线的过程，Δx可动态调整，直观理解导数的几何意义。
+                    </div>
+                    <div class="card-features">
+                        <span class="feature-tag">动画演示</span>
+                        <span class="feature-tag">割线逼近</span>
+                        <span class="feature-tag">多函数切换</span>
+                    </div>
+                </a>
+                
+                <a href="11_基本导数公式.html" class="formula-card">
+                    <div class="card-header">
+                        <span class="card-number">11</span>
+                        <span class="card-type plot2d">2D</span>
+                    </div>
+                    <div class="card-title">基本导数公式</div>
+                    <div class="card-formula">(xⁿ)' = nxⁿ⁻¹, (sinx)' = cosx<br>(cosx)' = -sinx, (eˣ)' = eˣ, (lnx)' = 1/x</div>
+                    <div class="card-desc">
+                        展示原函数与导函数图像的对比，一键切换不同函数，直观理解求导规律。
+                    </div>
+                    <div class="card-features">
+                        <span class="feature-tag">双图对比</span>
+                        <span class="feature-tag">公式速查表</span>
+                        <span class="feature-tag">5种函数</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+        
+        <!-- 第五部分：概率与统计 -->
+        <div class="section">
+            <h2 class="section-title">
+                <span class="icon">🔔</span>
+                第五部分：概率与统计
+            </h2>
+            <div class="formula-grid">
+                <a href="12_正态分布公式.html" class="formula-card">
+                    <div class="card-header">
+                        <span class="card-number">12</span>
+                        <span class="card-type plot3d">3D</span>
+                    </div>
+                    <div class="card-title">正态分布公式</div>
+                    <div class="card-formula">f(x) = (1/√(2πσ²)) · e^[-(x-μ)²/(2σ²)]</div>
+                    <div class="card-desc">
+                        3D展示正态分布曲面，μ和σ可调，鼠标拖动旋转视角，观察钟形曲线变化及68-95-99.7法则。
+                    </div>
+                    <div class="card-features">
+                        <span class="feature-tag">Three.js 3D</span>
+                        <span class="feature-tag">鼠标交互</span>
+                        <span class="feature-tag">σ范围标注</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+        
+        <footer>
+            <p>高中数学公式可视化 · 共12个交互式动画</p>
+            <p style="margin-top: 10px;">
+                使用 <a href="https://plotly.com/javascript/" target="_blank">Plotly.js</a> 和 
+                <a href="https://threejs.org/" target="_blank">Three.js</a> 构建
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

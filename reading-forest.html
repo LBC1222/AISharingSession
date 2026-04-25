@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>朗读树林 - Reading Forest</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Nunito', 'Noto Sans SC', sans-serif; overflow: hidden; background: #87CEEB; user-select: none; }
+
+    #canvas { display: block; width: 100vw; height: 100vh; }
+
+    /* ── Start Panel ── */
+    #start-panel {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      z-index: 100; pointer-events: all;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-radius: 32px; padding: 44px 52px; text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.15), 0 0 0 1px rgba(255,255,255,0.9), 0 0 0 4px rgba(139,195,74,0.2);
+      animation: panelBounce 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+      min-width: 360px;
+    }
+
+    @keyframes panelBounce {
+      from { opacity: 0; transform: translate(-50%, -50%) scale(0.75) rotate(-2deg); }
+      to   { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+    }
+
+    @keyframes treeSway {
+      0%, 100% { transform: rotate(-2deg) scale(1); }
+      50%       { transform: rotate(2deg) scale(1.05); }
+    }
+
+    .tree-float { animation: treeSway 3.5s ease-in-out infinite; display: inline-block; }
+
+    /* ── Title ── */
+    .panel-title-text {
+      font-size: 2.6rem; font-weight: 900; letter-spacing: -1px; line-height: 1.1;
+      background: linear-gradient(135deg, #4CAF50 0%, #8BC34A 45%, #FFA726 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+
+    .panel-subtitle {
+      font-size: 0.95rem; color: #999; font-weight: 600; margin-top: 6px; margin-bottom: 28px;
+    }
+
+    /* ── Buttons ── */
+    .btn-start {
+      position: relative; overflow: hidden; cursor: pointer;
+      background: linear-gradient(135deg, #66BB6A, #43A047, #2E7D32);
+      color: white; border: none; padding: 16px 48px;
+      font-size: 1.2rem; font-weight: 800; font-family: inherit;
+      border-radius: 100px; letter-spacing: 0.5px;
+      box-shadow: 0 6px 0 #1B5E20, 0 10px 20px rgba(46,125,50,0.3);
+      transition: all 0.15s ease; transform: translateY(0);
+    }
+    .btn-start:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 0 #1B5E20, 0 18px 36px rgba(46,125,50,0.35);
+    }
+    .btn-start:active {
+      transform: translateY(3px);
+      box-shadow: 0 3px 0 #1B5E20, 0 5px 10px rgba(46,125,50,0.25);
+    }
+
+    .btn-stop {
+      cursor: pointer;
+      background: linear-gradient(135deg, #ef5350, #e53935, #c62828);
+      color: white; border: none; padding: 10px 20px;
+      font-size: 0.88rem; font-weight: 700; font-family: inherit;
+      border-radius: 14px; letter-spacing: 0.3px;
+      box-shadow: 0 4px 0 #b71c1c, 0 6px 16px rgba(229,57,53,0.3);
+      transition: all 0.15s ease; transform: translateY(0);
+    }
+    .btn-stop:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 0 #b71c1c, 0 10px 24px rgba(229,57,53,0.35);
+    }
+    .btn-stop:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 #b71c1c, 0 3px 8px rgba(229,57,53,0.3);
+    }
+
+    /* ── Control Panel ── */
+    #control-panel {
+      position: fixed; top: 20px; right: 20px; z-index: 50; pointer-events: all;
+      background: rgba(255,255,255,0.95); border-radius: 24px;
+      box-shadow: 0 10px 36px rgba(0,0,0,0.1), 0 0 0 1px rgba(255,255,255,0.8), 0 0 0 4px rgba(139,195,74,0.18);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      padding: 20px 22px; min-width: 240px;
+      animation: panelSlideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes panelSlideIn {
+      from { opacity: 0; transform: translateX(36px) scale(0.92); }
+      to   { opacity: 1; transform: translateX(0) scale(1); }
+    }
+
+    .ctrl-divider { height: 2px; background: #f2f2f2; margin: 14px 0; border-radius: 2px; }
+
+    /* ── Volume bar ── */
+    #volume-bar-container {
+      height: 16px; border-radius: 100px; overflow: hidden;
+      background: #e8e8e8; margin: 8px 0 10px;
+      border: 2px solid #d8d8d8; box-shadow: inset 0 2px 5px rgba(0,0,0,0.08);
+      position: relative;
+    }
+    #volume-bar {
+      height: 100%; width: 0%; border-radius: 100px;
+      background: linear-gradient(90deg, #4CAF50, #8BC34A, #FFEB3B, #FF9800);
+      background-size: 300% 100%;
+      animation: barShine 1.5s ease infinite;
+      transition: width 0.08s ease-out;
+      position: relative;
+    }
+    #volume-bar::after {
+      content: '';
+      position: absolute; top: 2px; left: 8px; right: 8px; height: 4px;
+      background: rgba(255,255,255,0.35); border-radius: 100px;
+    }
+    @keyframes barShine {
+      0%   { background-position: 0% 50%; }
+      50%  { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* ── Status indicator ── */
+    .status-dot {
+      width: 9px; height: 9px; border-radius: 50%;
+      background: #ccc; display: inline-block; margin-right: 5px;
+      vertical-align: middle; transition: all 0.3s;
+      border: 1.5px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    }
+    .status-dot.loud { background: #4CAF50; box-shadow: 0 0 0 2px rgba(76,175,80,0.25), 0 1px 3px rgba(0,0,0,0.12); animation: dotBounce 0.6s ease infinite; }
+    .status-dot.mid  { background: #FFA726; box-shadow: 0 0 0 2px rgba(255,167,38,0.25), 0 1px 3px rgba(0,0,0,0.12); animation: dotBounce 0.8s ease infinite; }
+    .status-dot.low  { background: #FFEB3B; box-shadow: 0 0 0 2px rgba(255,235,59,0.25), 0 1px 3px rgba(0,0,0,0.12); animation: dotBounce 1s ease infinite; }
+    .status-dot.quiet { background: #ccc; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+
+    @keyframes dotBounce {
+      0%, 100% { transform: scale(1); }
+      50%       { transform: scale(1.35); }
+    }
+
+    /* ── Tree count ── */
+    #tree-count {
+      position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+      background: rgba(255,255,255,0.95); border-radius: 100px;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.1), 0 0 0 1px rgba(255,255,255,0.8);
+      padding: 10px 22px; font-size: 0.9rem; color: #666;
+      font-weight: 700; z-index: 50; pointer-events: none;
+      display: flex; align-items: center; gap: 5px;
+      animation: panelSlideUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes panelSlideUp {
+      from { opacity: 0; transform: translateX(-50%) translateY(18px); }
+      to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+    #tree-count .count-num { color: #4CAF50; font-weight: 900; font-size: 1.1rem; }
+
+    /* ── Instructions ── */
+    #instructions {
+      position: fixed; bottom: 88px; right: 20px;
+      background: rgba(255,255,255,0.95); border-radius: 18px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.09), 0 0 0 1px rgba(255,255,255,0.8);
+      padding: 14px 18px; font-size: 0.78rem; color: #888;
+      z-index: 50; pointer-events: none; max-width: 200px;
+      line-height: 1.85; font-weight: 600; animation: panelSlideIn 0.6s ease;
+    }
+    #instructions strong { color: #555; display: block; margin-bottom: 8px; font-size: 0.7rem; letter-spacing: 1px; text-transform: uppercase; }
+
+    /* ── Select ── */
+    #tree-type-select {
+      width: 100%; padding: 8px 12px; border-radius: 10px;
+      border: 2px solid #e8e8e8;
+      background: #fafafa;
+      color: #555; font-family: inherit;
+      font-size: 0.85rem; font-weight: 600; cursor: pointer; outline: none;
+      transition: all 0.2s ease;
+    }
+    #tree-type-select:hover { border-color: #8BC34A; background: #fff; }
+    #tree-type-select:focus { border-color: #4CAF50; box-shadow: 0 0 0 3px rgba(76,175,80,0.12); }
+    #tree-type-select option { background: #fff; color: #555; }
+
+    /* ── Hidden ── */
+    .hidden { display: none !important; }
+
+    ::selection { background: rgba(76,175,80,0.3); }
+  </style>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+
+<!-- ═══ START PANEL ═══ -->
+<div id="start-panel">
+  <div class="tree-float text-6xl mb-3" style="filter: drop-shadow(0 3px 6px rgba(0,0,0,0.12));">
+    &#x1F333;&#x1F338;
+  </div>
+  <h1 class="panel-title-text mb-1">朗读树林</h1>
+  <p class="panel-subtitle">大声朗读，让小树茁壮成长吧！</p>
+
+  <button id="start-btn" class="btn-start">
+    &#x1F33F; 开始朗读
+  </button>
+
+  <p class="mt-4 text-xs font-bold" style="color: #ccc; letter-spacing: 0.5px;">
+    模拟模式 · 无需麦克风
+  </p>
+</div>
+
+<!-- ═══ CONTROL PANEL ═══ -->
+<div id="control-panel" class="hidden">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+    <span class="status-dot quiet" id="status-indicator"></span>
+    <span class="ctrl-value" id="status-text" style="color:#aaa;font-size:0.88rem;font-weight:700;">等待中</span>
+  </div>
+
+  <div id="volume-bar-container">
+    <div id="volume-bar"></div>
+  </div>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+    <span style="font-size:0.68rem;font-weight:700;color:#ccc;text-transform:uppercase;letter-spacing:1.5px;">音量</span>
+    <span style="font-size:0.78rem;font-weight:800;color:#555;">
+      <span id="volume-percent">0</span><span style="font-size:0.68rem;color:#aaa;">%</span>
+    </span>
+  </div>
+
+  <div class="ctrl-divider"></div>
+
+  <div style="font-size:0.68rem;font-weight:700;color:#ccc;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;">下一棵树</div>
+  <select id="tree-type-select">
+    <option value="random">随机</option>
+    <option value="oak">绿色橡树</option>
+    <option value="cherry">樱花树</option>
+    <option value="maple">枫树</option>
+    <option value="pine">松树</option>
+  </select>
+
+  <div class="ctrl-divider"></div>
+
+  <button id="stop-btn" class="btn-stop w-full flex items-center justify-center gap-2">
+    &#x25A0; 停止朗读
+  </button>
+</div>
+
+<!-- ═══ TREE COUNT ═══ -->
+<div id="tree-count" class="hidden">
+  &#x1F333; <span>已种下</span>
+  <span class="count-num" id="tree-total">0</span>
+  <span>棵</span>
+</div>
+
+<!-- ═══ INSTRUCTIONS ═══ -->
+<div id="instructions" class="hidden">
+  <strong>朗读技巧</strong>
+  <span style="color:#4CAF50;">大声朗读</span> → 树干快速生长<br>
+  <span style="color:#8BC34A;">树干长成后</span> → 树叶开始长出<br>
+  <span style="color:#FFA726;">安静时</span> → 树木会枯萎<br>
+  <span style="color:#66BB6A;">树长大后</span> → 自动种新树
+</div>
+
+<script>
+// ============================================================
+// CANVAS SETUP
+// ============================================================
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth * window.devicePixelRatio;
+  canvas.height = window.innerHeight * window.devicePixelRatio;
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+}
+resizeCanvas();
+window.addEventListener('resize', () => {
+  resizeCanvas();
+  // Resize clouds/grass but keep groundY stable so trees don't float
+  clouds = clouds.map(c => ({ ...c, w: c.w * (window.innerWidth / screenW) }));
+  screenW = window.innerWidth;
+  screenH = window.innerHeight;
+});
+
+// ============================================================
+// GLOBAL STATE
+// ============================================================
+let isListening = false, currentVolume = 0, volumeSmooth = 0;
+let trees = [], particles = [], clouds = [], grassBlades = [], flowers = [];
+let groundY = 0, screenW = 0, screenH = 0;
+let time = 0, frameCount = 0;
+let nextTreeType = 'random';
+let simulatedVolume = 0, simulatedPhase = 0;
+
+function syncDimensions() {
+  screenW = window.innerWidth;
+  screenH = window.innerHeight;
+  groundY = screenH - 90;
+}
+
+// ============================================================
+// TREE TYPE DEFINITIONS — Cartoon style
+// ============================================================
+const TREE_TYPES = {
+  oak: {
+    name: '橡树',
+    trunkTop: '#8D6E63', trunkBot: '#5D4037', trunkLine: '#3E2723',
+    leaf1: '#4CAF50',
+    isCherry: false, isMaple: false, isPine: false,
+    maxH: 200, tw: 24,
+  },
+  cherry: {
+    name: '樱花树',
+    trunkTop: '#8D6E63', trunkBot: '#5D4037', trunkLine: '#3E2723',
+    leaf1: '#F8BBD9',
+    isCherry: true, isMaple: false, isPine: false,
+    maxH: 190, tw: 22,
+  },
+  maple: {
+    name: '枫树',
+    trunkTop: '#8D6E63', trunkBot: '#5D4037', trunkLine: '#3E2723',
+    leaf1: '#FF7043',
+    isCherry: false, isMaple: true, isPine: false,
+    maxH: 195, tw: 23,
+  },
+  pine: {
+    name: '松树',
+    trunkTop: '#6D4C41', trunkBot: '#4E342E', trunkLine: '#3E2723',
+    leaf1: '#2E7D32',
+    isCherry: false, isMaple: false, isPine: true,
+    maxH: 220, tw: 20,
+  }
+};
+
+// ============================================================
+// SCENE
+// ============================================================
+function initScene() {
+  clouds = [];
+  for (let i = 0; i < 7; i++) {
+    clouds.push({
+      x: Math.random() * screenW, y: 30 + Math.random() * 100,
+      w: 100 + Math.random() * 120, speed: 0.2 + Math.random() * 0.3,
+      phase: Math.random() * Math.PI * 2, baseX: Math.random() * screenW
+    });
+  }
+
+  grassBlades = [];
+  for (let i = 0; i < 250; i++) {
+    grassBlades.push({
+      x: Math.random() * screenW, h: 14 + Math.random() * 22,
+      phase: Math.random() * Math.PI * 2, speed: 0.6 + Math.random() * 0.5,
+      color: `hsl(${95 + Math.random() * 25},${55 + Math.random() * 20}%,${35 + Math.random() * 20}%)`,
+      thick: 2 + Math.random() * 2
+    });
+  }
+
+  flowers = [];
+  for (let i = 0; i < 30; i++) {
+    flowers.push({
+      x: Math.random() * screenW,
+      y: groundY - 2 + Math.random() * 4,
+      size: 4 + Math.random() * 5,
+      color: ['#FF6B6B','#FFE66D','#4ECDC4','#FF9FF3','#FFF'][Math.floor(Math.random()*5)],
+      phase: Math.random() * Math.PI * 2,
+      swaySpeed: 0.8 + Math.random() * 0.5
+    });
+  }
+}
+
+function getRandomTreeType() {
+  const types = Object.keys(TREE_TYPES);
+  return types[Math.floor(Math.random() * types.length)];
+}
+
+// ============================================================
+// AUDIO
+// ============================================================
+function setupAudio() { simulatedVolume = 0; simulatedPhase = 0; isListening = true; return true; }
+
+function stopAudio() {
+  isListening = false; simulatedVolume = 0; currentVolume = 0; volumeSmooth = 0;
+  document.getElementById('status-indicator').className = 'status-dot quiet';
+  document.getElementById('status-text').textContent = '已停止';
+  document.getElementById('status-text').style.color = '#aaa';
+  document.getElementById('volume-bar').style.width = '0%';
+  document.getElementById('start-panel').classList.remove('hidden');
+  document.getElementById('control-panel').classList.add('hidden');
+  document.getElementById('tree-count').classList.add('hidden');
+  document.getElementById('instructions').classList.add('hidden');
+  trees = []; particles = [];
+}
+
+function getVolume() {
+  if (!isListening) return 0;
+  simulatedPhase += 0.016;
+  simulatedVolume = 35
+    + Math.sin(simulatedPhase * 0.8) * 20
+    + Math.sin(simulatedPhase * 2.3) * 12
+    + Math.sin(simulatedPhase * 5.1) * 7
+    + Math.sin(simulatedPhase * 0.3) * 15;
+  simulatedVolume += (Math.random() - 0.5) * 12;
+  return Math.max(5, Math.min(95, simulatedVolume));
+}
+
+// ============================================================
+// TREE — real leaf shapes, static trunk/branches, swaying top
+// ============================================================
+class Tree {
+  constructor(x, y, type) {
+    this.x = x; this.y = y;
+    this.type = type || getRandomTreeType();
+    this.cfg = TREE_TYPES[this.type];
+    // Random height scale per tree: 1.0 to 1.8
+    this.hScale = 1.0 + Math.random() * 0.8;
+    this.growth = 0; this.witherLeaf = 0;
+    this.isDead = false; this.leaves = [];
+    this.swayOff = Math.random() * Math.PI * 2;
+    this.swaySpd = 0.6 + Math.random() * 0.3;
+    this._leafThresh = 0.4;
+  }
+
+  get _maxLeaves() {
+    return 160;
+  }
+
+  _addLeaf() {
+    const mh = this.cfg.maxH * this.hScale;
+    // Leaves grow from trunk top, extending outward and upward
+    const trunkH = mh * 0.55;
+    const baseY = this.y - trunkH;  // trunk top position
+    const canopyH = trunkH * 0.8;   // canopy extends above trunk top
+    const canopySpread = trunkH * 0.7;  // horizontal spread
+
+    const a = Math.random() * Math.PI * 2;
+    // More concentrated near trunk top (lower h values), spread outward
+    const hf = Math.pow(1 - Math.random(), 1.6);
+    const h = hf * canopyH;
+    const spread = canopySpread * (0.3 + hf * 0.7);
+
+    const lx = this.x + Math.cos(a) * spread * (0.5 + Math.random() * 0.5);
+    const ly = baseY - h * 0.3 + h;  // extends both upward and downward
+    const sr = 14 + Math.random() * 10;
+
+    const shades = this.cfg.isCherry
+      ? ['#F48FB1', '#F8BBD9', '#EC407A']
+      : this.cfg.isMaple
+      ? ['#FF7043', '#FF8A65', '#FF5722']
+      : this.cfg.isPine
+      ? ['#2E7D32', '#388E3C', '#1B5E20']
+      : ['#4CAF50', '#66BB6A', '#81C784'];
+    this.leaves.push({
+      x: lx, y: ly, r: sr,
+      c: shades[Math.floor(Math.random() * shades.length)],
+      rot: Math.random() * Math.PI * 2,
+      phase: Math.random() * Math.PI * 2,
+      spd: 0.03 + Math.random() * 0.04,
+      amp: 0.5 + Math.random() * 1,
+      stem: Math.random() > 0.3,
+      grow: 0, growing: false
+    });
+  }
+
+  update(vol) {
+    if (this.isDead) return;
+    if (vol > 3) {
+      const rate = 0.0015 + (vol / 100) * 0.003;
+      this.growth = Math.min(1, this.growth + rate);
+    }
+    if (vol < 5) {
+      this.witherLeaf = Math.min(1, this.witherLeaf + 0.0008);
+      if (this.witherLeaf >= 1 && this.growth > 0.3 && !this.isDead) {
+        this.isDead = true;
+        this._spawnWitherParticles();
+      }
+    } else {
+      this.witherLeaf = Math.max(0, this.witherLeaf - 0.00025);
+    }
+
+    // Leaves start appearing when trunk is ~60% grown
+    if (this.growth >= 0.6 && this.leaves.length < this._maxLeaves) {
+      if (Math.random() < 0.6) this._addLeaf();
+    }
+
+    // Start growing leaves when tree is at least 60% grown
+    if (this.growth >= 0.6) {
+      this.leaves.forEach(l => { l.growing = true; });
+    }
+
+    // Each leaf grows from 0 to 1 over time
+    this.leaves.forEach(l => {
+      if (l.growing && l.grow < 1) l.grow = Math.min(1, l.grow + 0.025);
+    });
+
+    // Update leaf sway
+    this.leaves.forEach(l => { l.phase += l.spd; });
+  }
+
+  dropLeaf() {
+    if (this.leaves.length === 0 || this.isDead) return;
+    const idx = Math.floor(Math.random() * this.leaves.length);
+    const l = this.leaves.splice(idx, 1)[0];
+    particles.push({
+      x: l.x, y: l.y,
+      vx: (Math.random() - 0.5) * 1.2, vy: 0.3 + Math.random() * 0.6,
+      sz: l.r, c: l.c,
+      life: 1, dec: 0.004 + Math.random() * 0.003,
+      rot: Math.random() * Math.PI * 2, rotS: (Math.random() - 0.5) * 0.1,
+      sway: Math.random() * Math.PI * 2, swayA: 1 + Math.random() * 2, petal: false
+    });
+  }
+
+  _spawnWitherParticles() {
+    const mh = this.cfg.maxH * this.hScale;
+    for (let i = 0; i < 8; i++) {
+      const ex = this.x + (Math.random() - 0.5) * 60;
+      const ey = this.y - mh * (0.4 + Math.random() * 0.3);
+      particles.push({
+        x: ex, y: ey,
+        vx: (Math.random() - 0.5) * 1.2, vy: 0.3 + Math.random() * 0.6,
+        sz: 5 + Math.random() * 6, c: this.cfg.leaf1,
+        life: 1, dec: 0.004 + Math.random() * 0.003,
+        rot: Math.random() * Math.PI * 2, rotS: (Math.random() - 0.5) * 0.1,
+        sway: Math.random() * Math.PI * 2, swayA: 1 + Math.random() * 2, petal: false
+      });
+    }
+  }
+
+  draw() {
+    const g = this.growth;
+    const mh = this.cfg.maxH * this.hScale, tw = this.cfg.tw * Math.sqrt(this.hScale);
+
+    if (this.isDead) { this._drawDead(); return; }
+
+    ctx.save();
+
+    // ── TRUNK (static, no sway) ──
+    const trunkH = mh * 0.55 * g;
+    const tg = Math.min(1, g / this._leafThresh);
+
+    // Trunk shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.1)';
+    ctx.beginPath();
+    ctx.ellipse(this.x + 5, this.y + 5, tw * 0.55, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Trunk body
+    const tGrad = ctx.createLinearGradient(this.x - tw, 0, this.x + tw, 0);
+    tGrad.addColorStop(0, this.cfg.trunkBot);
+    tGrad.addColorStop(0.4, this.cfg.trunkTop);
+    tGrad.addColorStop(1, this.cfg.trunkBot);
+    ctx.fillStyle = tGrad;
+    ctx.beginPath();
+    ctx.moveTo(this.x - tw * 0.5, this.y);
+    ctx.bezierCurveTo(this.x - tw * 0.6, this.y - trunkH * 0.4, this.x - tw * 0.4, this.y - trunkH * 0.8, this.x - tw * 0.25, this.y - trunkH);
+    ctx.lineTo(this.x + tw * 0.25, this.y - trunkH);
+    ctx.bezierCurveTo(this.x + tw * 0.4, this.y - trunkH * 0.8, this.x + tw * 0.6, this.y - trunkH * 0.4, this.x + tw * 0.5, this.y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = this.cfg.trunkLine;
+    ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.stroke();
+
+    // ── BRANCHES (static, no sway) ──
+    if (tg > 0.3) {
+      const bg = (tg - 0.3) / 0.7;
+      for (let i = 0; i < 4; i++) {
+        const t = (i + 1) / 5;
+        const by = this.y - trunkH * t;
+        const side = i % 2 === 0 ? 1 : -1;
+        const blen = mh * 0.22 * bg;
+        ctx.strokeStyle = this.cfg.trunkTop;
+        ctx.lineWidth = tw * 0.22 * bg;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(this.x, by);
+        ctx.quadraticCurveTo(
+          this.x + side * blen * 0.5, by - blen * 0.3,
+          this.x + side * blen * 0.9, by - blen * 0.35
+        );
+        ctx.stroke();
+      }
+    }
+
+    // ── BLUE FLOWERS at trunk top ──
+    if (tg > 0.6) {
+      const fg = (tg - 0.6) / 0.4;
+      ctx.globalAlpha = fg * 0.9;
+      const flowerY = this.y - trunkH + 8;
+      const flowerColors = ['#90CAF9', '#64B5F6', '#42A5F5'];
+      for (let i = 0; i < 3; i++) {
+        const fx = this.x + (i - 1) * 10;
+        for (let p = 0; p < 5; p++) {
+          const pa = (p / 5) * Math.PI * 2;
+          ctx.fillStyle = flowerColors[i];
+          ctx.beginPath();
+          ctx.ellipse(fx + Math.cos(pa) * 3, flowerY + Math.sin(pa) * 3, 2.5, 1.8, pa, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.fillStyle = '#FFF9C4';
+        ctx.beginPath(); ctx.arc(fx, flowerY, 1.8, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    // ── LEAF SHAPES — one by one (sways with time) ──
+    if (g >= this._leafThresh) {
+      const swayX = Math.sin(time * this.swaySpd + this.swayOff) * 5;
+      const swayY = Math.sin(time * this.swaySpd * 0.7 + this.swayOff) * 2;
+
+      if (this.leaves.length > 0) {
+        // Ground shadow — grows with canopy
+        const avgGrow = this.leaves.reduce((s, l) => s + l.grow, 0) / this.leaves.length;
+        ctx.globalAlpha = 0.08 * avgGrow;
+        ctx.fillStyle = '#1B5E20';
+        ctx.beginPath();
+        ctx.ellipse(this.x + 10, this.y - 5, mh * 0.38 * avgGrow, 10 * avgGrow, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Draw each leaf with real leaf shape
+        ctx.globalAlpha = 1;
+        this.leaves.forEach(l => {
+          if (this.witherLeaf > 0.5 && Math.random() < 0.005) this.dropLeaf();
+          const sx = Math.sin(l.phase) * l.amp;
+          const lx = l.x + swayX + sx;
+          const ly = l.y + swayY;
+          const leafColor = this.witherLeaf > 0.3 ? '#9E8B60' : l.c;
+          const gr = l.grow;
+          const r = l.r * Math.max(0.05, gr);
+
+          ctx.save();
+          ctx.translate(lx, ly + r * 0.35);
+          ctx.scale(gr, gr);
+          ctx.rotate(l.rot);
+          ctx.translate(0, -r * 0.35);
+
+          // Stem
+          if (l.stem && gr > 0.3) {
+            ctx.strokeStyle = this.witherLeaf > 0.3 ? '#7A6B4A' : '#388E3C';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, r * 0.3);
+            ctx.lineTo(0, r * 0.85);
+            ctx.stroke();
+          }
+
+          // Leaf body — teardrop / oval shape
+          ctx.fillStyle = leafColor;
+          ctx.beginPath();
+          ctx.moveTo(0, -r);
+          ctx.bezierCurveTo(r * 0.85, -r * 0.5, r * 0.85, r * 0.5, 0, r * 0.35);
+          ctx.bezierCurveTo(-r * 0.85, r * 0.5, -r * 0.85, -r * 0.5, 0, -r);
+          ctx.fill();
+
+          // Main vein
+          ctx.strokeStyle = this.witherLeaf > 0.3 ? '#7A6B4A' : '#2E7D32';
+          ctx.lineWidth = 0.8;
+          ctx.globalAlpha = 0.5;
+          ctx.beginPath();
+          ctx.moveTo(0, -r * 0.85);
+          ctx.lineTo(0, r * 0.3);
+          ctx.stroke();
+
+          // Side veins (only on larger leaves)
+          const sideV = l.r > 14 ? Math.min(3, Math.floor(l.r / 5)) : 2;
+          for (let v = 0; v < sideV; v++) {
+            const vy = -r * 0.6 + v * r * 0.5;
+            ctx.beginPath();
+            ctx.moveTo(0, vy);
+            ctx.lineTo(r * 0.4, vy - r * 0.15);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(0, vy);
+            ctx.lineTo(-r * 0.4, vy - r * 0.15);
+            ctx.stroke();
+          }
+
+          // Highlight
+          ctx.globalAlpha = 0.25;
+          ctx.fillStyle = '#fff';
+          ctx.beginPath();
+          ctx.ellipse(-r * 0.25, -r * 0.4, r * 0.25, r * 0.15, -0.3, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.restore();
+        });
+      }
+    }
+
+    ctx.restore();
+
+    // ── Growth progress indicator ──
+    if (g < 1) this._drawProgress(g, mh, tw);
+  }
+
+  _drawProgress(g, mh, tw) {
+    const progress = g < this._leafThresh
+      ? {pct: g / this._leafThresh, label: '树干', color: '#8D6E63'}
+      : {pct: 1, label: '完成', color: '#4CAF50'};
+
+    const bx = this.x - 30, bw = 60, bh = 7, by = this.y - mh * g - 24;
+    ctx.save(); ctx.globalAlpha = 0.85;
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.beginPath(); ctx.roundRect(bx - 1, by - 1, bw + 2, bh + 2, 4); ctx.fill();
+    ctx.fillStyle = progress.color;
+    ctx.beginPath(); ctx.roundRect(bx, by, bw * progress.pct, bh, 3); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.beginPath(); ctx.roundRect(bx, by, bw * progress.pct * 0.55, bh * 0.38, 2); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 8px Nunito, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(progress.label, this.x, by - 3);
+    ctx.restore();
+  }
+
+  _drawDead() {
+    const mh = this.cfg.maxH * this.hScale * 0.85, tw = this.cfg.tw * Math.sqrt(this.hScale) * 0.8;
+    ctx.save(); ctx.globalAlpha = 0.7;
+    ctx.strokeStyle = '#5D4037'; ctx.lineWidth = tw * 0.8; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(this.x, this.y); ctx.lineTo(this.x, this.y - mh * 0.65); ctx.stroke();
+    ctx.lineWidth = tw * 0.35;
+    for (let i = 0; i < 4; i++) {
+      const a = (i / 4) * Math.PI - Math.PI * 0.5;
+      const len = mh * 0.25;
+      ctx.beginPath();
+      ctx.moveTo(this.x, this.y - mh * (0.2 + i * 0.12));
+      ctx.lineTo(this.x + Math.sin(a) * len, this.y - mh * (0.2 + i * 0.12) - Math.cos(a) * len * 0.25);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function lerp(c1, c2, t) {
+  const h = c => parseInt(c.replace('#',''), 16);
+  const r1=(h(c1)>>16)&255,g1=(h(c1)>>8)&255,b1=h(c1)&255;
+  const r2=(h(c2)>>16)&255,g2=(h(c2)>>8)&255,b2=h(c2)&255;
+  return `rgb(${Math.round(r1+(r2-r1)*t)},${Math.round(g1+(g2-g1)*t)},${Math.round(b1+(b2-b1)*t)})`;
+}
+
+function spawnLeafParticle(x, y, type) {
+  const cfg = TREE_TYPES[type];
+  particles.push({
+    x, y, vx:(Math.random()-0.5)*1.5, vy:0.3+Math.random()*0.8,
+    sz:5+Math.random()*6, c: cfg.leaf1,
+    life:1, dec:0.005+Math.random()*0.003,
+    rot:Math.random()*Math.PI*2, rotS:(Math.random()-0.5)*0.1,
+    sway:Math.random()*Math.PI*2, swayA:1+Math.random()*2, petal: false
+  });
+}
+
+// ============================================================
+// PARTICLES
+// ============================================================
+function updateParticles() {
+  for (let i = particles.length-1; i>=0; i--) {
+    const p = particles[i];
+    if (p.petal) {
+      p.x += p.vx + Math.sin(time+p.sway)*0.4; p.y += p.vy; p.rot += p.rotS;
+    } else {
+      p.x += p.vx + Math.sin(time*2+p.sway)*p.swayA*0.3; p.y += p.vy;
+      p.rot += p.rotS; p.vy += 0.012;
+    }
+    p.life -= p.dec;
+    if (p.life<=0 || p.y>groundY) particles.splice(i,1);
+  }
+}
+
+function drawParticles() {
+  particles.forEach(p => {
+    ctx.save(); ctx.globalAlpha = p.life * 0.85; ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+    ctx.fillStyle = p.c;
+    if (p.petal) {
+      ctx.beginPath(); ctx.ellipse(0, 0, p.sz, p.sz * 0.6, 0, 0, Math.PI * 2); ctx.fill();
+    } else {
+      // Falling leaf — teardrop shape
+      ctx.beginPath();
+      ctx.moveTo(0, -p.sz);
+      ctx.bezierCurveTo(p.sz * 0.85, -p.sz * 0.5, p.sz * 0.85, p.sz * 0.5, 0, p.sz * 0.35);
+      ctx.bezierCurveTo(-p.sz * 0.85, p.sz * 0.5, -p.sz * 0.85, -p.sz * 0.5, 0, -p.sz);
+      ctx.fill();
+    }
+    ctx.restore();
+  });
+}
+
+// ============================================================
+// BACKGROUND — Soft morning light
+// ============================================================
+function drawBackground() {
+  // Sky — soft warm yellow
+  const sky = ctx.createLinearGradient(0, 0, 0, groundY);
+  sky.addColorStop(0, '#FFFDE7');
+  sky.addColorStop(0.5, '#FFF9C4');
+  sky.addColorStop(1, '#FFF8E1');
+  ctx.fillStyle = sky; ctx.fillRect(0,0,screenW,groundY);
+
+  // Subtle cloud blobs
+  clouds.forEach((c) => {
+    c.x += c.speed*0.08;
+    if (c.x > screenW+c.w) c.x = -c.w;
+    const cy2 = c.y + Math.sin(time*0.3+c.phase)*3;
+    ctx.save(); ctx.globalAlpha = 0.7;
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(c.x+c.w*0.3, cy2, c.w*0.2, 0, Math.PI*2);
+    ctx.arc(c.x+c.w*0.5, cy2-c.w*0.06, c.w*0.22, 0, Math.PI*2);
+    ctx.arc(c.x+c.w*0.68, cy2, c.w*0.18, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  });
+
+  // Ground — warm grass
+  const gGrad = ctx.createLinearGradient(0, groundY, 0, screenH);
+  gGrad.addColorStop(0, '#A5D6A7');
+  gGrad.addColorStop(0.4, '#81C784');
+  gGrad.addColorStop(1, '#66BB6A');
+  ctx.fillStyle = gGrad;
+  ctx.beginPath(); ctx.moveTo(0, groundY);
+  for (let x = 0; x <= screenW; x += 15) {
+    const hy = groundY + Math.sin(x*0.02)*3 + Math.sin(x*0.008)*2;
+    ctx.lineTo(x, hy);
+  }
+  ctx.lineTo(screenW, screenH); ctx.lineTo(0, screenH); ctx.closePath(); ctx.fill();
+
+  // Grass blades
+  grassBlades.forEach(g => {
+    const sw = Math.sin(time*g.speed+g.phase)*3;
+    ctx.strokeStyle = g.color; ctx.lineWidth = g.thick; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(g.x, groundY);
+    ctx.quadraticCurveTo(g.x+sw, groundY-g.h*0.5, g.x+sw*1.5, groundY-g.h);
+    ctx.stroke();
+  });
+
+  // Small blue flowers scattered on ground
+  flowers.forEach(f => {
+    const sw = Math.sin(time*f.swaySpeed+f.phase)*2;
+    ctx.save(); ctx.translate(f.x+sw, f.y);
+    // 5 petals
+    ctx.fillStyle = '#90CAF9';
+    for (let p = 0; p < 5; p++) {
+      const pa = (p/5)*Math.PI*2;
+      ctx.beginPath();
+      ctx.ellipse(Math.cos(pa)*3, Math.sin(pa)*3, 2.5, 1.8, pa, 0, Math.PI*2);
+      ctx.fill();
+    }
+    ctx.fillStyle = '#FFF9C4';
+    ctx.beginPath(); ctx.arc(0, 0, 2, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+  });
+}
+
+// ============================================================
+// TREE MANAGEMENT
+// ============================================================
+const TREE_MIN_GAP = 200; // minimum pixel gap between trees
+
+function spawnNextTree() {
+  let attempts = 0, tx;
+  const margin = 120;
+
+  do {
+    tx = margin + Math.random() * (screenW - margin * 2);
+    attempts++;
+  } while (attempts < 50 && trees.some(t => Math.abs(t.x - tx) < TREE_MIN_GAP));
+
+  const type = nextTreeType==='random' ? getRandomTreeType() : nextTreeType;
+  trees.push(new Tree(tx, groundY, type));
+  document.getElementById('tree-total').textContent = trees.length;
+  while (trees.length > 7) trees.shift();
+}
+
+// ============================================================
+// UI
+// ============================================================
+function updateUI(vol) {
+  const volRounded = Math.round(vol);
+  document.getElementById('volume-bar').style.width = volRounded + '%';
+  document.getElementById('volume-percent').textContent = volRounded;
+  const dot = document.getElementById('status-indicator');
+  const txt = document.getElementById('status-text');
+  dot.className = 'status-dot';
+  if (vol>50)      { dot.classList.add('loud'); txt.textContent='大声朗读中!'; txt.style.color='#4CAF50'; }
+  else if (vol>20) { dot.classList.add('mid');  txt.textContent='正在朗读';   txt.style.color='#FFA726'; }
+  else if (vol>5)  { dot.classList.add('low');  txt.textContent='小声说话';   txt.style.color='#FBC02D'; }
+  else             { dot.classList.add('quiet');txt.textContent='安静...';     txt.style.color='#aaa'; }
+}
+
+// ============================================================
+// MAIN LOOP
+// ============================================================
+function animate() {
+  time += 0.016; frameCount++;
+  if (isListening) {
+    currentVolume = getVolume();
+    volumeSmooth = volumeSmooth*0.7 + currentVolume*0.3;
+    updateUI(volumeSmooth);
+  }
+
+  ctx.clearRect(0, 0, screenW, screenH);
+  drawBackground();
+
+  trees.forEach(t => {
+    t.update(volumeSmooth);
+    if (t.growth>=1 && !t.newSpawned) {
+      t.newSpawned = true;
+      setTimeout(() => { if (trees.length<7) spawnNextTree(); }, 1800);
+    }
+  });
+  trees.forEach(t => t.draw());
+
+  if (isListening && trees.length===0) spawnNextTree();
+
+  updateParticles(); drawParticles();
+
+  if (isListening && volumeSmooth < 5 && trees.length > 0 && frameCount % 25 === 0) {
+    const at = trees.find(t => !t.isDead && t.leaves.length > 3);
+    if (at) at.dropLeaf();
+  }
+
+  requestAnimationFrame(animate);
+}
+
+// ============================================================
+// EVENTS
+// ============================================================
+document.getElementById('start-btn').addEventListener('click', async () => {
+  if (await setupAudio()) {
+    ['start-panel','control-panel','tree-count','instructions'].forEach(id => {
+      document.getElementById(id).classList.toggle('hidden', id!=='control-panel'&&id!=='tree-count'&&id!=='instructions');
+    });
+    syncDimensions(); initScene(); animate();
+  }
+});
+document.getElementById('tree-type-select').addEventListener('change', e => { nextTreeType = e.target.value; });
+document.getElementById('stop-btn').addEventListener('click', () => { stopAudio(); });
+
+// Init
+initScene(); animate();
+</script>
+</body>
+</html>

@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>正态分布公式 - 高中数学公式可视化</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: "PingFang SC", "Microsoft YaHei", "SimHei", sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh; color: #fff; transition: all 0.3s ease;
+            overflow-x: hidden;
+        }
+        body.light-theme { background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); color: #333; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        header { text-align: center; padding: 20px 0; }
+        h1 { font-size: 2.2em; margin-bottom: 10px; background: linear-gradient(90deg, #a29bfe, #74b9ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .formula-box {
+            background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
+            border-radius: 15px; padding: 20px 30px; margin: 20px auto;
+            display: inline-block; border: 1px solid rgba(255,255,255,0.2);
+        }
+        body.light-theme .formula-box { background: rgba(255,255,255,0.8); border: 1px solid rgba(0,0,0,0.1); }
+        .formula { font-size: 1.4em; color: #a29bfe; font-family: "Times New Roman", serif; }
+        .theme-toggle {
+            position: fixed; top: 20px; right: 20px; padding: 10px 20px;
+            border: none; border-radius: 25px; background: rgba(255,255,255,0.2);
+            color: #fff; cursor: pointer; transition: all 0.3s; z-index: 1000;
+        }
+        body.light-theme .theme-toggle { background: rgba(0,0,0,0.1); color: #333; }
+        .main-content { display: grid; grid-template-columns: 1fr 350px; gap: 30px; margin-top: 20px; }
+        #canvas-container { 
+            background: rgba(255,255,255,0.05); border-radius: 15px; min-height: 600px;
+            position: relative; overflow: hidden;
+        }
+        body.light-theme #canvas-container { background: rgba(255,255,255,0.9); }
+        #canvas-container canvas { width: 100% !important; height: 100% !important; }
+        .control-panel {
+            background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
+            border-radius: 15px; padding: 25px; border: 1px solid rgba(255,255,255,0.2);
+        }
+        body.light-theme .control-panel { background: rgba(255,255,255,0.8); border: 1px solid rgba(0,0,0,0.1); }
+        .control-group { margin-bottom: 20px; }
+        .control-group label { display: block; margin-bottom: 8px; font-size: 1.1em; color: #a29bfe; }
+        input[type="range"] {
+            width: 100%; height: 8px; border-radius: 4px;
+            background: rgba(255,255,255,0.2); outline: none; -webkit-appearance: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 20px; height: 20px;
+            border-radius: 50%; background: #a29bfe; cursor: pointer;
+        }
+        .value-display { text-align: right; font-size: 1.2em; margin-top: 5px; color: #fff; }
+        body.light-theme .value-display { color: #333; }
+        .result-panel {
+            background: rgba(162,155,254,0.1); border-radius: 10px; padding: 20px; margin-top: 20px;
+        }
+        body.light-theme .result-panel { background: rgba(162,155,254,0.2); }
+        .result-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .result-value { color: #a29bfe; font-weight: bold; font-size: 1.1em; }
+        .hint { background: rgba(255,193,7,0.2); border-radius: 10px; padding: 15px; margin-top: 15px; font-size: 0.95em; line-height: 1.6; }
+        .legend { background: rgba(255,255,255,0.05); border-radius: 10px; padding: 15px; margin-top: 15px; }
+        body.light-theme .legend { background: rgba(255,255,255,0.8); }
+        .legend-item { display: flex; align-items: center; margin: 8px 0; }
+        .legend-color { width: 30px; height: 4px; border-radius: 2px; margin-right: 10px; }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" onclick="toggleTheme()">🌙 深色/浅色</button>
+    <div class="container">
+        <header>
+            <h1>🔔 正态分布公式</h1>
+            <div class="formula-box">
+                <div class="formula">f(x) = (1/√(2πσ²)) · e^[-(x-μ)²/(2σ²)]</div>
+            </div>
+        </header>
+        
+        <div class="main-content">
+            <div id="canvas-container"></div>
+            <div class="control-panel">
+                <h2 style="margin-bottom: 20px; color: #a29bfe;">🎛️ 参数控制</h2>
+                <div class="control-group">
+                    <label>期望 μ (均值)</label>
+                    <input type="range" id="mu" min="-3" max="3" step="0.1" value="0">
+                    <div class="value-display" id="mu-value">0</div>
+                </div>
+                <div class="control-group">
+                    <label>标准差 σ</label>
+                    <input type="range" id="sigma" min="0.3" max="2" step="0.1" value="1">
+                    <div class="value-display" id="sigma-value">1</div>
+                </div>
+                
+                <div class="result-panel">
+                    <h3 style="margin-bottom: 15px; color: #a29bfe;">📊 分布特征</h3>
+                    <div class="result-item"><span>均值 μ =</span><span class="result-value" id="showMu">0</span></div>
+                    <div class="result-item"><span>标准差 σ =</span><span class="result-value" id="showSigma">1</span></div>
+                    <div class="result-item"><span>方差 σ² =</span><span class="result-value" id="showVar">1</span></div>
+                    <div class="result-item"><span>峰值 =</span><span class="result-value" id="peak">--</span></div>
+                </div>
+                
+                <div class="legend">
+                    <div style="margin-bottom: 10px; color: #a29bfe;">🎨 图例</div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #a29bfe;"></div>
+                        <span>3D 正态分布曲面</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ff7675;"></div>
+                        <span>2D 钟形曲线 (切面)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #00cec9;"></div>
+                        <span>μ ± 1σ 范围</span>
+                    </div>
+                </div>
+                
+                <div class="hint">
+                    💡 提示：正态分布是统计学中最重要的分布。68-95-99.7法则：数据落在 μ±1σ、μ±2σ、μ±3σ 内的概率分别约为 68%、95%、99.7%。
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let isDarkTheme = true;
+        let scene, camera, renderer, controls;
+        let surfaceMesh, curveLine, sigmaLines;
+        
+        function toggleTheme() {
+            isDarkTheme = !isDarkTheme;
+            document.body.classList.toggle('light-theme');
+            updateTheme();
+        }
+        
+        function normalPDF(x, mu, sigma) {
+            const coef = 1 / (sigma * Math.sqrt(2 * Math.PI));
+            const exponent = -Math.pow(x - mu, 2) / (2 * sigma * sigma);
+            return coef * Math.exp(exponent);
+        }
+        
+        function init() {
+            const container = document.getElementById('canvas-container');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            
+            // 场景
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(isDarkTheme ? 0x1a1a2e : 0xf5f7fa);
+            
+            // 相机
+            camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
+            camera.position.set(8, 6, 8);
+            
+            // 渲染器
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(width, height);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+            
+            // 控制器
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            
+            // 灯光
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(10, 10, 10);
+            scene.add(directionalLight);
+            
+            // 创建图形
+            createSurface();
+            createCurve();
+            createSigmaRanges();
+            
+            // 坐标轴
+            createAxes();
+            
+            // 窗口大小调整
+            window.addEventListener('resize', onWindowResize);
+            
+            animate();
+        }
+        
+        function createSurface() {
+            const mu = parseFloat(document.getElementById('mu').value);
+            const sigma = parseFloat(document.getElementById('sigma').value);
+            
+            if (surfaceMesh) scene.remove(surfaceMesh);
+            
+            const geometry = new THREE.BufferGeometry();
+            const vertices = [];
+            const step = 0.15;
+            
+            for (let x = -5; x <= 5; x += step) {
+                for (let y = -5; y <= 5; y += step) {
+                    const z = normalPDF(x, mu, sigma);
+                    vertices.push(x, z, y);
+                }
+            }
+            
+            const positions = new Float32Array(vertices);
+            const indices = [];
+            
+            const nx = Math.floor(10 / step) + 1;
+            const ny = Math.floor(10 / step) + 1;
+            
+            for (let i = 0; i < nx - 1; i++) {
+                for (let j = 0; j < ny - 1; j++) {
+                    const a = i + j * nx;
+                    const b = i + 1 + j * nx;
+                    const c = i + (j + 1) * nx;
+                    const d = i + 1 + (j + 1) * nx;
+                    
+                    indices.push(a, b, d);
+                    indices.push(a, d, c);
+                }
+            }
+            
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setIndex(indices);
+            geometry.computeVertexNormals();
+            
+            const material = new THREE.MeshPhongMaterial({
+                color: 0xa29bfe,
+                transparent: true,
+                opacity: 0.8,
+                side: THREE.DoubleSide,
+                wireframe: false
+            });
+            
+            surfaceMesh = new THREE.Mesh(geometry, material);
+            scene.add(surfaceMesh);
+        }
+        
+        function createCurve() {
+            const mu = parseFloat(document.getElementById('mu').value);
+            const sigma = parseFloat(document.getElementById('sigma').value);
+            
+            if (curveLine) scene.remove(curveLine);
+            
+            const points = [];
+            for (let x = -5; x <= 5; x += 0.05) {
+                const z = normalPDF(x, mu, sigma);
+                points.push(new THREE.Vector3(x, z, 0));
+            }
+            
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+            const material = new THREE.LineBasicMaterial({ color: 0xff7675, linewidth: 3 });
+            curveLine = new THREE.Line(geometry, material);
+            scene.add(curveLine);
+        }
+        
+        function createSigmaRanges() {
+            const mu = parseFloat(document.getElementById('mu').value);
+            const sigma = parseFloat(document.getElementById('sigma').value);
+            
+            if (sigmaLines) {
+                sigmaLines.forEach(line => scene.remove(line));
+            }
+            sigmaLines = [];
+            
+            // μ ± 1σ 范围
+            const x1sigma = [mu - sigma, mu + sigma];
+            const z1sigma = x1sigma.map(x => normalPDF(x, mu, sigma));
+            
+            const points1 = [
+                new THREE.Vector3(mu - sigma, 0, 0),
+                new THREE.Vector3(mu - sigma, 0.01, 0),
+                new THREE.Vector3(mu + sigma, 0.01, 0),
+                new THREE.Vector3(mu + sigma, 0, 0)
+            ];
+            
+            const geometry1 = new THREE.BufferGeometry().setFromPoints(points1);
+            const material1 = new THREE.LineBasicMaterial({ color: 0x00cec9 });
+            const line1 = new THREE.Line(geometry1, material1);
+            scene.add(line1);
+            sigmaLines.push(line1);
+            
+            // μ ± 2σ 范围
+            const points2 = [
+                new THREE.Vector3(mu - 2*sigma, 0, 0),
+                new THREE.Vector3(mu - 2*sigma, 0.01, 0),
+                new THREE.Vector3(mu + 2*sigma, 0.01, 0),
+                new THREE.Vector3(mu + 2*sigma, 0, 0)
+            ];
+            const geometry2 = new THREE.BufferGeometry().setFromPoints(points2);
+            const material2 = new THREE.LineBasicMaterial({ color: 0xfdcb6e });
+            const line2 = new THREE.Line(geometry2, material2);
+            scene.add(line2);
+            sigmaLines.push(line2);
+            
+            // μ ± 3σ 范围
+            const points3 = [
+                new THREE.Vector3(mu - 3*sigma, 0, 0),
+                new THREE.Vector3(mu - 3*sigma, 0.01, 0),
+                new THREE.Vector3(mu + 3*sigma, 0.01, 0),
+                new THREE.Vector3(mu + 3*sigma, 0, 0)
+            ];
+            const geometry3 = new THREE.BufferGeometry().setFromPoints(points3);
+            const material3 = new THREE.LineBasicMaterial({ color: 0xff6b6b });
+            const line3 = new THREE.Line(geometry3, material3);
+            scene.add(line3);
+            sigmaLines.push(line3);
+        }
+        
+        function createAxes() {
+            // X轴
+            const xAxisGeom = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(-6, 0, 0),
+                new THREE.Vector3(6, 0, 0)
+            ]);
+            const xAxisMat = new THREE.LineBasicMaterial({ color: isDarkTheme ? 0xffffff : 0x333333 });
+            const xAxis = new THREE.Line(xAxisGeom, xAxisMat);
+            scene.add(xAxis);
+            
+            // Y轴
+            const yAxisGeom = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(0, 0, 0),
+                new THREE.Vector3(0, 0.5, 0)
+            ]);
+            const yAxis = new THREE.Line(yAxisGeom, xAxisMat.clone());
+            scene.add(yAxis);
+            
+            // Z轴
+            const zAxisGeom = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(0, 0, -6),
+                new THREE.Vector3(0, 0, 6)
+            ]);
+            const zAxis = new THREE.Line(zAxisGeom, xAxisMat.clone());
+            scene.add(zAxis);
+        }
+        
+        function updateTheme() {
+            scene.background = new THREE.Color(isDarkTheme ? 0x1a1a2e : 0xf5f7fa);
+        }
+        
+        function updateDisplay() {
+            const mu = parseFloat(document.getElementById('mu').value);
+            const sigma = parseFloat(document.getElementById('sigma').value);
+            
+            document.getElementById('mu-value').textContent = mu.toFixed(1);
+            document.getElementById('sigma-value').textContent = sigma.toFixed(1);
+            document.getElementById('showMu').textContent = mu.toFixed(1);
+            document.getElementById('showSigma').textContent = sigma.toFixed(1);
+            document.getElementById('showVar').textContent = (sigma * sigma).toFixed(2);
+            document.getElementById('peak').textContent = normalPDF(mu, mu, sigma).toFixed(4);
+        }
+        
+        function onWindowResize() {
+            const container = document.getElementById('canvas-container');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(width, height);
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        
+        function updatePlot() {
+            updateDisplay();
+            createSurface();
+            createCurve();
+            createSigmaRanges();
+        }
+        
+        ['mu', 'sigma'].forEach(id => {
+            document.getElementById(id).addEventListener('input', updatePlot);
+        });
+        
+        init();
+    </script>
+</body>
+</html>

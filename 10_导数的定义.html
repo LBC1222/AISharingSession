@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>导数的定义 - 高中数学公式可视化</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: "PingFang SC", "Microsoft YaHei", "SimHei", sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh; color: #fff; transition: all 0.3s ease;
+        }
+        body.light-theme { background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); color: #333; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        header { text-align: center; padding: 20px 0; }
+        h1 { font-size: 2.2em; margin-bottom: 10px; background: linear-gradient(90deg, #00cec9, #81ecec); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .formula-box {
+            background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
+            border-radius: 15px; padding: 20px 30px; margin: 20px auto;
+            display: inline-block; border: 1px solid rgba(255,255,255,0.2);
+        }
+        body.light-theme .formula-box { background: rgba(255,255,255,0.8); border: 1px solid rgba(0,0,0,0.1); }
+        .formula { font-size: 1.6em; color: #00cec9; font-family: "Times New Roman", serif; }
+        .theme-toggle {
+            position: fixed; top: 20px; right: 20px; padding: 10px 20px;
+            border: none; border-radius: 25px; background: rgba(255,255,255,0.2);
+            color: #fff; cursor: pointer; transition: all 0.3s;
+        }
+        body.light-theme .theme-toggle { background: rgba(0,0,0,0.1); color: #333; }
+        .main-content { display: grid; grid-template-columns: 1fr 350px; gap: 30px; margin-top: 20px; }
+        #plot { background: rgba(255,255,255,0.05); border-radius: 15px; min-height: 600px; }
+        body.light-theme #plot { background: rgba(255,255,255,0.9); }
+        .control-panel {
+            background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
+            border-radius: 15px; padding: 25px; border: 1px solid rgba(255,255,255,0.2);
+        }
+        body.light-theme .control-panel { background: rgba(255,255,255,0.8); border: 1px solid rgba(0,0,0,0.1); }
+        .control-group { margin-bottom: 20px; }
+        .control-group label { display: block; margin-bottom: 8px; font-size: 1.1em; color: #00cec9; }
+        input[type="range"] {
+            width: 100%; height: 8px; border-radius: 4px;
+            background: rgba(255,255,255,0.2); outline: none; -webkit-appearance: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 20px; height: 20px;
+            border-radius: 50%; background: #00cec9; cursor: pointer;
+        }
+        .value-display { text-align: right; font-size: 1.2em; margin-top: 5px; color: #fff; }
+        body.light-theme .value-display { color: #333; }
+        .result-panel {
+            background: rgba(0,206,201,0.1); border-radius: 10px; padding: 20px; margin-top: 20px;
+        }
+        body.light-theme .result-panel { background: rgba(0,206,201,0.2); }
+        .result-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .result-value { color: #00cec9; font-weight: bold; font-size: 1.1em; }
+        .hint { background: rgba(255,193,7,0.2); border-radius: 10px; padding: 15px; margin-top: 15px; font-size: 0.95em; line-height: 1.6; }
+        .animation-info { background: rgba(255,255,255,0.05); border-radius: 10px; padding: 15px; margin-top: 15px; }
+        body.light-theme .animation-info { background: rgba(255,255,255,0.8); }
+        .btn-group { display: flex; gap: 10px; margin-top: 15px; }
+        .btn {
+            flex: 1; padding: 12px; border: none; border-radius: 8px;
+            background: #00cec9; color: #fff; font-size: 1em; cursor: pointer; transition: all 0.3s;
+        }
+        .btn:hover { background: #00b894; transform: scale(1.02); }
+        .btn.active { background: #00b894; box-shadow: 0 0 10px rgba(0,206,201,0.5); }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" onclick="toggleTheme()">🌙 深色/浅色</button>
+    <div class="container">
+        <header>
+            <h1>📈 导数的定义</h1>
+            <div class="formula-box">
+                <div class="formula">f'(x) = lim(Δx→0) [f(x+Δx) - f(x)]/Δx</div>
+            </div>
+        </header>
+        
+        <div class="main-content">
+            <div id="plot"></div>
+            <div class="control-panel">
+                <h2 style="margin-bottom: 20px; color: #00cec9;">🎛️ 参数控制</h2>
+                <div class="control-group">
+                    <label>Δx 值</label>
+                    <input type="range" id="dx" min="0.01" max="2" step="0.01" value="1">
+                    <div class="value-display" id="dx-value">1.00</div>
+                </div>
+                
+                <div class="btn-group">
+                    <button class="btn active" id="btnLinear" onclick="setFunction('linear')">一次函数</button>
+                    <button class="btn" id="btnQuadratic" onclick="setFunction('quadratic')">二次函数</button>
+                </div>
+                <div class="btn-group" style="margin-top: 5px;">
+                    <button class="btn" id="btnCubic" onclick="setFunction('cubic')">三次函数</button>
+                    <button class="btn" id="btnSine" onclick="setFunction('sine')">正弦函数</button>
+                </div>
+                
+                <div class="result-panel">
+                    <h3 style="margin-bottom: 15px; color: #00cec9;">📊 割线斜率</h3>
+                    <div class="result-item"><span>Δx =</span><span class="result-value" id="showDx">1.00</span></div>
+                    <div class="result-item"><span>f(x) =</span><span class="result-value" id="fx">--</span></div>
+                    <div class="result-item"><span>f(x+Δx) =</span><span class="result-value" id="fxDx">--</span></div>
+                    <div class="result-item"><span>Δy/Δx =</span><span class="result-value" id="slope">--</span></div>
+                </div>
+                
+                <div class="animation-info">
+                    <div style="color: #81ecec; margin-bottom: 10px;">📐 动画控制</div>
+                    <div class="btn-group">
+                        <button class="btn" onclick="animateDx()">▶️ 播放动画</button>
+                        <button class="btn" onclick="resetDx()">🔄 重置</button>
+                    </div>
+                    <div style="margin-top: 10px; font-size: 0.9em; color: #888;">
+                        当 Δx → 0 时，割线趋近于切线，斜率即为导数值
+                    </div>
+                </div>
+                
+                <div class="hint">
+                    💡 提示：导数是函数在某一点的瞬时变化率，几何意义是函数图像在该点的切线斜率。通过调整 Δx，观察割线如何逼近切线。
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let isDarkTheme = true;
+        let currentFunc = 'linear';
+        let animationId = null;
+        let baseDx = 1;
+        
+        function toggleTheme() {
+            isDarkTheme = !isDarkTheme;
+            document.body.classList.toggle('light-theme');
+            updatePlot();
+        }
+        
+        function setFunction(func) {
+            currentFunc = func;
+            document.querySelectorAll('.btn-group .btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('btn' + func.charAt(0).toUpperCase() + func.slice(1)).classList.add('active');
+            updatePlot();
+        }
+        
+        function f(x) {
+            switch (currentFunc) {
+                case 'linear': return 2 * x + 1;
+                case 'quadratic': return x * x;
+                case 'cubic': return x * x * x / 4;
+                case 'sine': return Math.sin(x) * 2;
+                default: return 2 * x + 1;
+            }
+        }
+        
+        function fPrime(x) {
+            switch (currentFunc) {
+                case 'linear': return 2;
+                case 'quadratic': return 2 * x;
+                case 'cubic': return 3 * x * x / 4;
+                case 'sine': return Math.cos(x) * 2;
+                default: return 2;
+            }
+        }
+        
+        function updatePlot() {
+            const dx = parseFloat(document.getElementById('dx').value);
+            const x0 = 1; // 定点
+            
+            document.getElementById('dx-value').textContent = dx.toFixed(2);
+            document.getElementById('showDx').textContent = dx.toFixed(2);
+            
+            const y0 = f(x0);
+            const y1 = f(x0 + dx);
+            const slope = (y1 - y0) / dx;
+            const tangentSlope = fPrime(x0);
+            
+            document.getElementById('fx').textContent = y0.toFixed(4);
+            document.getElementById('fxDx').textContent = y1.toFixed(4);
+            document.getElementById('slope').textContent = slope.toFixed(4);
+            
+            // 生成函数图像
+            const xRange = [];
+            const yRange = [];
+            const tangentX = [x0 - 2, x0 + 2];
+            const tangentY = tangentX.map(x => y0 + tangentSlope * (x - x0));
+            const secantX = [x0, x0 + dx];
+            const secantY = [y0, y1];
+            
+            for (let x = -3; x <= 5; x += 0.05) {
+                xRange.push(x);
+                yRange.push(f(x));
+            }
+            
+            // 标注文字
+            const funcNames = {
+                'linear': 'f(x) = 2x + 1',
+                'quadratic': 'f(x) = x²',
+                'cubic': 'f(x) = x³/4',
+                'sine': 'f(x) = 2sin(x)'
+            };
+            
+            const traces = [
+                // 函数曲线
+                {
+                    x: xRange, y: yRange,
+                    mode: 'lines',
+                    name: 'f(x)',
+                    line: { color: '#00cec9', width: 3 }
+                },
+                // 切线 (当dx→0时的极限)
+                {
+                    x: tangentX, y: tangentY,
+                    mode: 'lines',
+                    name: '切线 (导数)',
+                    line: { color: '#ff6b6b', width: 3, dash: dx < 0.1 ? 'solid' : 'dash' }
+                },
+                // 割线
+                {
+                    x: secantX, y: secantY,
+                    mode: 'lines',
+                    name: '割线',
+                    line: { color: '#fdcb6e', width: 3 }
+                },
+                // Δx 线段
+                {
+                    x: [x0, x0 + dx], y: [y0, y0],
+                    mode: 'lines',
+                    name: 'Δx',
+                    line: { color: '#74b9ff', width: 3 }
+                },
+                // Δy 线段
+                {
+                    x: [x0 + dx, x0 + dx], y: [y0, y1],
+                    mode: 'lines',
+                    name: 'Δy',
+                    line: { color: '#a29bfe', width: 3 }
+                },
+                // P点
+                {
+                    x: [x0], y: [y0],
+                    mode: 'markers',
+                    marker: { size: 15, color: '#ff6b6b' },
+                    name: 'P点'
+                },
+                // Q点
+                {
+                    x: [x0 + dx], y: [y1],
+                    mode: 'markers',
+                    marker: { size: 15, color: '#fdcb6e' },
+                    name: 'Q点'
+                },
+                // P点标注
+                {
+                    x: [x0 + 0.1], y: [y0 + 0.3],
+                    mode: 'text',
+                    text: ['P'],
+                    textfont: { size: 16, color: '#ff6b6b', bold: true }
+                },
+                // Q点标注
+                {
+                    x: [x0 + dx + 0.1], y: [y1 + 0.3],
+                    mode: 'text',
+                    text: ['Q'],
+                    textfont: { size: 16, color: '#fdcb6e', bold: true }
+                },
+                // Δx 标注
+                {
+                    x: [(x0 + x0 + dx) / 2], y: [y0 - 0.5],
+                    mode: 'text',
+                    text: [`Δx=${dx.toFixed(2)}`],
+                    textfont: { size: 14, color: '#74b9ff' }
+                },
+                // Δy 标注
+                {
+                    x: [x0 + dx + 0.3], y: [(y0 + y1) / 2],
+                    mode: 'text',
+                    text: [`Δy=${(y1-y0).toFixed(2)}`],
+                    textfont: { size: 14, color: '#a29bfe' }
+                },
+                // 斜率标注
+                {
+                    x: [0.5], y: [8],
+                    mode: 'text',
+                    text: [`割线斜率: ${slope.toFixed(4)}\n切线斜率: ${tangentSlope.toFixed(4)}`],
+                    textfont: { size: 14, color: '#00cec9' }
+                },
+                // 函数名标注
+                {
+                    x: [4], y: [f(4)],
+                    mode: 'text',
+                    text: [funcNames[currentFunc]],
+                    textfont: { size: 16, color: '#00cec9', bold: true }
+                }
+            ];
+            
+            const layout = {
+                title: {
+                    text: `<b>导数的几何意义：割线逼近切线</b><br><span style="font-size:14px">Δx → 0 时，Δy/Δx → f'(x)</span>`,
+                    font: { size: 20, color: '#00cec9' }
+                },
+                showlegend: true,
+                legend: {
+                    font: { size: 12, color: isDarkTheme ? '#fff' : '#333' },
+                    x: 0.02, y: 0.98
+                },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                xaxis: {
+                    showgrid: true,
+                    gridcolor: 'rgba(255,255,255,0.1)',
+                    zeroline: true,
+                    zerolinecolor: 'rgba(255,255,255,0.3)',
+                    range: [-3, 5],
+                    title: 'x'
+                },
+                yaxis: {
+                    showgrid: true,
+                    gridcolor: 'rgba(255,255,255,0.1)',
+                    zeroline: true,
+                    zerolinecolor: 'rgba(255,255,255,0.3)',
+                    range: [-4, 10],
+                    scaleanchor: 'x',
+                    scaleratio: 1
+                },
+                margin: { l: 60, r: 60, t: 100, b: 60 }
+            };
+            
+            if (!isDarkTheme) {
+                layout.xaxis.gridcolor = 'rgba(0,0,0,0.1)';
+                layout.yaxis.gridcolor = 'rgba(0,0,0,0.1)';
+            }
+            
+            Plotly.react('plot', traces, layout, {displayModeBar: false});
+        }
+        
+        function animateDx() {
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+                return;
+            }
+            
+            let dx = 1;
+            const slider = document.getElementById('dx');
+            
+            function animate() {
+                dx *= 0.95;
+                if (dx < 0.01) {
+                    dx = 1;
+                }
+                slider.value = dx;
+                updatePlot();
+                animationId = requestAnimationFrame(animate);
+            }
+            
+            animate();
+        }
+        
+        function resetDx() {
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+            document.getElementById('dx').value = 1;
+            updatePlot();
+        }
+        
+        document.getElementById('dx').addEventListener('input', updatePlot);
+        updatePlot();
+    </script>
+</body>
+</html>
